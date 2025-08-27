@@ -128,34 +128,7 @@ class CausalityValidator:
         }
 ```
 
-## Quick Start
-
-```python
-from agents import AgenticPipeline
-from core import BottleneckRegistry
-
-# Initialize
-pipeline = AgenticPipeline()
-registry = BottleneckRegistry()
-
-# Process chunks
-chunks = load_chunks()  # Your 5000 chunks
-
-# Run pipeline
-results = pipeline.analyze(
-    chunks=chunks,
-    bottlenecks=registry.get_active_bottlenecks(),
-    min_confidence=0.7
-)
-
-# Results include comparative analysis
-for evidence in results:
-    print(f"Best match: {evidence.bottleneck_id}")
-    print(f"Alternatives: {evidence.alternative_matches}")
-    print(f"Causality: {evidence.causality_validation}")
-```
-
-## Design Philosophy
+## Design
 
 ### Problem-Specific Solutions
 
@@ -171,17 +144,6 @@ for evidence in results:
 - Don't accept first match - find best match
 - Don't assume causation - validate explicitly
 
-## Expected Improvements
-
-Based on the structured pipeline's issues:
-
-| Metric | Structured | Agentic | Improvement |
-|--------|------------|---------|-------------|
-| False Positive Rate | ~50% | ~15% | 70% reduction |
-| Misclassification | ~20% | ~5% | 75% reduction |
-| Causal Inference Errors | ~30% | ~8% | 73% reduction |
-| Processing Time | 5 hours | 1.5 hours | 70% faster |
-| LLM Calls | 20,000 | 1,000 | 95% reduction |
 
 ## Customization
 

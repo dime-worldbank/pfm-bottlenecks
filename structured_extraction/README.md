@@ -144,32 +144,6 @@ structured_pipeline/
 - Azure OpenAI access
 - Python packages: `instructor`, `openai`, `pydantic`, `pandas`
 
-### Basic Usage
-
-```python
-from core.services import create_azure_client, AzureOpenAIService
-from core.database import DatabaseManager
-from core.pipeline import BottleneckPipeline
-
-# Initialize services
-client = create_azure_client(dbutils)
-service = AzureOpenAIService(client)
-db_manager = DatabaseManager(spark)
-pipeline = BottleneckPipeline(service, db_manager)
-
-# Process a bottleneck
-bottleneck_id = "1.1"
-chunks = [...]  # Your document chunks
-
-# Run extraction
-df_extracted = pipeline.run_extraction(bottleneck_id, chunks)
-
-# Run validation (can be re-run multiple times)
-df_validated = pipeline.run_validation(bottleneck_id, df_extracted)
-
-# Generate final summaries
-df_final = pipeline.run_formatting(bottleneck_id, df_validated)
-```
 
 ## Key Design Decisions
 
@@ -191,13 +165,6 @@ df_final = pipeline.run_formatting(bottleneck_id, df_validated)
 - **Debugging**: Identify specific failure patterns
 - **Improvement**: Target prompt improvements to specific criteria
 
-## Performance Metrics
-
-Typical results from our PFM analysis:
-- **Extraction**: ~5% of chunks contain evidence (95% filtered)
-- **Validation**: ~30-50% of extracted evidence validates
-- **Precision**: 85-90% agreement with expert review (after iteration)
-- **Processing**: ~1000 chunks/hour with rate limiting
 
 ## References
 
