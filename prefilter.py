@@ -1,17 +1,22 @@
+# Databricks notebook source
+# MAGIC %run ./bottleneck_definitions
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col
+
+# COMMAND ----------
+
 """
 Pre-Filter using dense embeddings only.
-NO LLM CALLS - uses local embeddings only.
-Fast path: pre-normalize refs and texts → cosine = dot product.
 """
 
 import numpy as np
-from typing import List, Optional
+from typing import List
 from sentence_transformers import SentenceTransformer
-from bottleneck_definitions import load_bottlenecks
 
 
 def _l2_normalize(x: np.ndarray, eps: float = 1e-12) -> np.ndarray:
-    """Row-wise L2 normalize (safe for zeros)."""
     if x.ndim == 1:
         x = x[None, :]
     norms = np.linalg.norm(x, axis=1, keepdims=True)
@@ -19,66 +24,35 @@ def _l2_normalize(x: np.ndarray, eps: float = 1e-12) -> np.ndarray:
 
 
 class PreFilter:
-    """
-    Embedding-based filtering using semantic similarity.
-    NO LLM calls - only local processing.
-    """
-
     def __init__(
         self,
-        embedding_model: str = "all-mpnet-base-v2",
+        embedding_model: str = "/Volumes/prd_mega/sboost4/vboost4/Documents/input/Bottleneck/all-mpnet-base-v2",
         embedding_threshold: float = 0.55,
         encode_batch_size: int = 100,
         show_progress: bool = True,
         dtype=np.float32,
     ):
-        """
-        Args:
-            embedding_model: Sentence transformer model name
-            embedding_threshold: Min cosine similarity score
-            encode_batch_size: Optional batch size override for encoding
-            show_progress: Show ST encoding progress bars
-            dtype: dtype for stored embeddings (default float32)
-        """
         self.embedding_threshold = float(embedding_threshold)
         self.encode_batch_size = encode_batch_size
         self.show_progress = show_progress
         self.dtype = dtype
-
-        # Load embedding model
         self.encoder = SentenceTransformer(embedding_model)
 
-        # Load bottleneck definitions
         self.bottleneck_data = load_bottlenecks()
-
-        # Create reference embeddings for bottlenecks
         self._create_reference_embeddings()
 
     def _create_reference_embeddings(self):
-        """
-        Create unit-normalized embeddings for all bottlenecks (reference side).
-        """
         reference_texts: List[str] = []
-        self.reference_map = {}
 
-        # Add bottleneck descriptions
-        for challenge_id, challenge in self.bottleneck_data["challenges"].items():
+        for challenge in self.bottleneck_data["challenges"].values():
             for bottleneck in challenge["bottlenecks"]:
                 text = f"{bottleneck['name']}. {bottleneck['description']}"
                 reference_texts.append(text)
-                self.reference_map[len(reference_texts) - 1] = {
-                    "type": "bottleneck",
-                    "id": bottleneck["id"],
-                    "name": bottleneck["name"],
-                    "challenge_id": challenge_id,
-                }
 
         if not reference_texts:
             self.reference_embeddings = np.empty((0, 0), dtype=self.dtype)
-            print("[PreFilter] No reference texts found.")
             return
 
-        # Encode & normalize → cosine = dot product
         ref_emb = self.encoder.encode(
             reference_texts,
             batch_size=self.encode_batch_size,
@@ -87,52 +61,15 @@ class PreFilter:
         ).astype(self.dtype, copy=False)
 
         ref_emb = _l2_normalize(ref_emb).astype(self.dtype, copy=False)
-        # Keep contiguous for fast BLAS
         self.reference_embeddings = np.ascontiguousarray(ref_emb)
-        print(f"[PreFilter] Created {len(self.reference_embeddings)} normalized reference embeddings")
 
-    def filter(self, chunk_text: str):
-        """
-        Filter a single chunk using cosine similarity vs. precomputed references.
-        Returns (is_relevant, hints) tuple where is_relevant is True if max similarity ≥ threshold.
-        """
-        if not chunk_text or self.reference_embeddings.size == 0:
-            return False, []
-
-        # 1×D normalized text embedding
-        text_emb = self.encoder.encode(
-            [chunk_text],
-            batch_size=self.encode_batch_size,
-            convert_to_numpy=True,
-            show_progress_bar=False,
-        ).astype(self.dtype, copy=False)
-        text_emb = _l2_normalize(text_emb).astype(self.dtype, copy=False)  # shape (1, D)
-
-        # Cosine via dot product (M,) ← (M,D) @ (D,)
-        sims = self.reference_embeddings @ text_emb[0]
-        max_sim = float(sims.max())
-        is_relevant = max_sim >= self.embedding_threshold
-        
-        # Generate hints about top matching references
-        hints = []
-        if is_relevant:
-            top_idx = sims.argmax()
-            hints.append(f"Similarity: {max_sim:.3f}")
-        
-        return is_relevant, hints
-
-    def filter_batch(self, chunk_texts: List[str]):
-        """
-        Filter multiple chunks at once (vectorized).
-        Returns a list of (is_relevant, hints) tuples for each input text.
-        """
+    def filter_batch(self, chunk_texts: List[str]) -> List[bool]:
         if not chunk_texts:
             return []
 
         if self.reference_embeddings.size == 0:
-            return [(False, []) for _ in chunk_texts]
+            return [False for _ in chunk_texts]
 
-        # N×D normalized text embeddings
         text_embs = self.encoder.encode(
             chunk_texts,
             batch_size=self.encode_batch_size,
@@ -142,31 +79,81 @@ class PreFilter:
         text_embs = _l2_normalize(text_embs).astype(self.dtype, copy=False)
         text_embs = np.ascontiguousarray(text_embs)
 
-        # N×M similarities via single GEMM
-        sim_matrix = text_embs @ self.reference_embeddings.T  # (N, M)
+        sim_matrix = text_embs @ self.reference_embeddings.T
         max_sims = sim_matrix.max(axis=1)
-        thr = self.embedding_threshold
-        
-        # Build results with hints
-        results = []
-        for max_sim in max_sims:
-            is_relevant = bool(max_sim >= thr)
-            hints = []
-            if is_relevant:
-                hints.append(f"Similarity: {float(max_sim):.3f}")
-            results.append((is_relevant, hints))
-        
-        return results
 
-    def max_similarity(self, chunk_text: str) -> float:
-        """Return the max cosine similarity (helps with threshold calibration)."""
-        if not chunk_text or self.reference_embeddings.size == 0:
-            return 0.0
-        text_emb = self.encoder.encode(
-            [chunk_text], convert_to_numpy=True, show_progress_bar=False
+        return [bool(sim >= self.embedding_threshold) for sim in max_sims]
+
+    def max_similarity_batch(self, chunk_texts: List[str]) -> List[float]:
+        if not chunk_texts:
+            return []
+
+        if self.reference_embeddings.size == 0:
+            return [0.0 for _ in chunk_texts]
+
+        text_embs = self.encoder.encode(
+            chunk_texts,
+            batch_size=self.encode_batch_size,
+            convert_to_numpy=True,
+            show_progress_bar=self.show_progress,
         ).astype(self.dtype, copy=False)
-        text_emb = _l2_normalize(text_emb).astype(self.dtype, copy=False)
-        sims = self.reference_embeddings @ text_emb[0]
-        return float(sims.max())
+        text_embs = _l2_normalize(text_embs).astype(self.dtype, copy=False)
+        text_embs = np.ascontiguousarray(text_embs)
 
+        sim_matrix = text_embs @ self.reference_embeddings.T
+        max_sims = sim_matrix.max(axis=1)
+
+        return [float(sim) for sim in max_sims]
+
+
+
+# COMMAND ----------
+
+
+def run_prefilter(schema: str, source_table: str, results_table: str, threshold: float = 0.55):
+    """Run prefilter on new chunks and save results to Databricks table."""
+    import pandas as pd
+
+    source_df = spark.table(f"{schema}.{source_table}").select("node_id", "chunk_id").toPandas()
+    source_pairs = set(zip(source_df['node_id'], source_df['chunk_id']))
+
+    try:
+        processed_df = spark.table(f"{schema}.{results_table}").select("node_id", "chunk_id").toPandas()
+        processed_pairs = set(zip(processed_df['node_id'], processed_df['chunk_id']))
+    except Exception:
+        processed_pairs = set()
+
+    new_pairs = source_pairs - processed_pairs
+    print(f"Source: {len(source_pairs)} | Processed: {len(processed_pairs)} | New: {len(new_pairs)}")
+
+    if new_pairs:
+        new_pairs_df = pd.DataFrame(list(new_pairs), columns=['node_id', 'chunk_id'])
+        spark_new_pairs = spark.createDataFrame(new_pairs_df)
+
+        new_chunks_df = spark.table(f"{schema}.{source_table}").join(
+            spark_new_pairs, on=['node_id', 'chunk_id'], how='inner'
+        ).toPandas()
+
+        prefilter = PreFilter(embedding_threshold=threshold, show_progress=True)
+        print(f"Loaded {len(new_chunks_df)} chunks, {len(prefilter.reference_embeddings)} reference embeddings")
+
+        filter_results = prefilter.filter_batch(new_chunks_df['text'].tolist())
+        new_chunks_df['prefilter_passed'] = filter_results
+
+        passed = sum(filter_results)
+        print(f"Results: {passed}/{len(filter_results)} passed ({100*passed/len(filter_results):.1f}%)")
+
+        results_df = new_chunks_df[['node_id', 'chunk_id', 'prefilter_passed']]
+        spark_df = spark.createDataFrame(results_df)
+
+        mode = "append" if processed_pairs else "overwrite"
+        spark_df.write.mode(mode).saveAsTable(f"{schema}.{results_table}")
+        print(f"Saved to {schema}.{results_table}")
+    else:
+        print("No new chunks to process")
+
+    total_df = spark.table(f"{schema}.{results_table}").toPandas()
+    total_passed = total_df['prefilter_passed'].sum()
+    total_count = len(total_df)
+    print(f"Total: {total_count} | Passed: {total_passed} ({100*total_passed/total_count:.1f}%)")
 

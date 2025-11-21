@@ -1,3 +1,4 @@
+# Databricks notebook source
 from __future__ import annotations
 
 from typing import Optional, Type
@@ -8,9 +9,6 @@ import instructor
 
 
 class Service:
-    """
-    Minimal wrapper: Azure OpenAI + instructor -> Pydantic instance.
-    """
 
     DEFAULT_SYSTEM_PROMPT = """You are a public finance expert working at a multilateral development bank. 
     Your job is to identify and evaluate evidence of bottlenecks in Public Financial Management (PFM) systems, 
@@ -81,3 +79,8 @@ class Service:
             temperature=temperature,
             max_tokens=max_tokens,
         )
+
+
+# COMMAND ----------
+
+
