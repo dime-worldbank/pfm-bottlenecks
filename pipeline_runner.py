@@ -9,13 +9,23 @@ run_document_ingestion(SCHEMA, DOCS_METADATA_TABLE, CHUNKS_TABLE)
 
 # COMMAND ----------
 
-# Run prefilter 
-run_prefilter(SCHEMA, CHUNKS_TABLE, PREFILTER_RESULTS_TABLE, threshold=0.55)
+prefilter_results_table = f"{SCHEMA}.{PREFILTER_RESULTS_TABLE}"
+
+# Check if the results table already exists
+if spark.catalog.tableExists(prefilter_results_table):
+    print(f"{prefilter_results_table} already exists. Skipping prefilter")
+else:
+    run_prefilter(
+        SCHEMA,
+        CHUNKS_TABLE,
+        PREFILTER_RESULTS_TABLE,
+        threshold=0.55
+    )
 
 
 # COMMAND ----------
 
-BOTTLENECK_ID = '2.1'
+BOTTLENECK_ID = '3.1'
 
 # COMMAND ----------
 

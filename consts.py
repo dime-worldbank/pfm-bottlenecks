@@ -3,6 +3,10 @@ LLM_MODEL = 'gpt-4o'
 
 # COMMAND ----------
 
+LOCAL_EMBEDDINGS_MODEL = "/Volumes/prd_mega/sboost4/vboost4/Documents/input/Bottleneck/all-mpnet-base-v2"
+
+# COMMAND ----------
+
 SCHEMA = "prd_mega.sboost4"
 CHUNKS_TABLE = "per_pfr_chunks"
 DOCS_METADATA_TABLE = "per_pfr_document_data"

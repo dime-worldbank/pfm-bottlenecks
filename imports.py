@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %pip install -U openai azure-identity instructor sentence-transformers "pydantic>=2.4"
+# MAGIC %pip install -U "pydantic>=2.4,<3" instructor openai azure-identity sentence-transformers
 
 # COMMAND ----------
 
@@ -20,3 +20,15 @@
 # COMMAND ----------
 
 # MAGIC %run ./consts
+
+# COMMAND ----------
+
+# MAGIC %run ./evidence_extraction
+
+# COMMAND ----------
+
+# MAGIC %run ./service
+
+# COMMAND ----------
+
+# MAGIC %run ./evidence_validation

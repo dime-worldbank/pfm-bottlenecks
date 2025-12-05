@@ -1,5 +1,17 @@
 # Databricks notebook source
-# MAGIC %run ./imports
+# MAGIC %pip install -U "pydantic>=2.4,<3" instructor openai azure-identity sentence-transformers
+
+# COMMAND ----------
+
+# MAGIC %run ./service
+
+# COMMAND ----------
+
+# MAGIC %run ./consts
+
+# COMMAND ----------
+
+# MAGIC %run ./bottleneck_definitions
 
 # COMMAND ----------
 
@@ -110,7 +122,6 @@ class EvidenceExtractor:
 
 def run_evidence_extraction(schema: str, source_table: str, prefilter_results_table: str, bottleneck_id: str):
     """Extract evidence from prefiltered chunks and save to table."""
-    from service import Service
 
     passed_chunks_df = spark.sql(f"""
         SELECT c.*
@@ -133,7 +144,7 @@ def run_evidence_extraction(schema: str, source_table: str, prefilter_results_ta
     results = []
     for idx, row in tqdm(passed_chunks_df.iterrows(), total=passed_chunks_df.shape[0]):
         chunk_id = row['chunk_id']
-        chunk_text = row['chunk_text']
+        chunk_text = row['text']
         node_id = row['node_id']
         try:
             evidence = extractor.extract_chunk(chunk_text, node_id, chunk_id)

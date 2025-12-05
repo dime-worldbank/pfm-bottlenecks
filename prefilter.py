@@ -3,7 +3,7 @@
 
 # COMMAND ----------
 
-from pyspark.sql.functions import col
+# MAGIC %run ./consts
 
 # COMMAND ----------
 
@@ -12,7 +12,9 @@ Pre-Filter using dense embeddings only.
 """
 
 import numpy as np
+import pandas as pd
 from typing import List
+from pyspark.sql.functions import col
 from sentence_transformers import SentenceTransformer
 
 
@@ -26,7 +28,7 @@ def _l2_normalize(x: np.ndarray, eps: float = 1e-12) -> np.ndarray:
 class PreFilter:
     def __init__(
         self,
-        embedding_model: str = "/Volumes/prd_mega/sboost4/vboost4/Documents/input/Bottleneck/all-mpnet-base-v2",
+        embedding_model: str = LOCAL_EMBEDDINGS_MODEL,
         embedding_threshold: float = 0.55,
         encode_batch_size: int = 100,
         show_progress: bool = True,
@@ -112,7 +114,6 @@ class PreFilter:
 
 def run_prefilter(schema: str, source_table: str, results_table: str, threshold: float = 0.55):
     """Run prefilter on new chunks and save results to Databricks table."""
-    import pandas as pd
 
     source_df = spark.table(f"{schema}.{source_table}").select("node_id", "chunk_id").toPandas()
     source_pairs = set(zip(source_df['node_id'], source_df['chunk_id']))
