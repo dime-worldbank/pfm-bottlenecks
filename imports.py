@@ -23,11 +23,11 @@
 
 # COMMAND ----------
 
-# MAGIC %run ./evidence_extraction
+# MAGIC %run ./service
 
 # COMMAND ----------
 
-# MAGIC %run ./service
+# MAGIC %run ./evidence_extraction
 
 # COMMAND ----------
 
