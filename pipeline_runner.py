@@ -26,7 +26,8 @@ run_evidence_extraction(
     schema=SCHEMA,
     source_table=CHUNKS_TABLE,
     prefilter_results_table=PREFILTER_RESULTS_TABLE,
-    bottleneck_id=BOTTLENECK_ID
+    bottleneck_id=BOTTLENECK_ID,
+    overwrite=False
 )
 
 # COMMAND ----------
@@ -34,7 +35,8 @@ run_evidence_extraction(
 # Run validation
 run_validation(
     schema=SCHEMA,
-    bottleneck_id=BOTTLENECK_ID
+    bottleneck_id=BOTTLENECK_ID,
+    overwrite=False
 )
 
 # COMMAND ----------
@@ -42,6 +44,7 @@ run_validation(
 run_reflection(
     schema=SCHEMA,
     bottleneck_id=BOTTLENECK_ID,
+    overwrite=False
 )
 
 # COMMAND ----------
@@ -52,6 +55,6 @@ run_summary_generation(
     source_stage="validation", # change to "reflection" if source data is post reflection
     doc_metadata_table=DOCS_METADATA_TABLE,
     chunks_table=CHUNKS_TABLE, 
+    overwrite=True
 )
-
 

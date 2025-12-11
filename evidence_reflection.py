@@ -142,7 +142,7 @@ def build_reflection_prompt(bottleneck_def: dict, extracted_span: str) -> str:
         Do NOT invent other labels or keys.
         """
 
-def run_reflection(schema: str, bottleneck_id: str):
+def run_reflection(schema: str, bottleneck_id: str, overwrite: bool = False):
     """
     Run reflection on validated evidence for a given bottleneck.
 
@@ -159,7 +159,9 @@ def run_reflection(schema: str, bottleneck_id: str):
     extraction_table = f"rpf_bottleneck_{bottleneck_id.replace('.', '_')}_extractions"
     reflection_table = f"rpf_bottleneck_{bottleneck_id.replace('.', '_')}_reflection_results"
 
-    if spark.catalog.tableExists(f"{schema}.{reflection_table}"):
+    reflection_table_exists = spark.catalog.tableExists(f"{schema}.{reflection_table}")
+
+    if reflection_table_exists  and not overwrite:
         print(f"Skipping reflection; table exists: {schema}.{reflection_table}")
         return
 
