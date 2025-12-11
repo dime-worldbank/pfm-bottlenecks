@@ -134,7 +134,7 @@ def run_evidence_extraction(schema: str, source_table: str, prefilter_results_ta
         JOIN {schema}.{prefilter_results_table} r
           ON c.node_id = r.node_id AND c.chunk_id = r.chunk_id
         WHERE r.prefilter_passed = true
-    """).toPandas().sample(30)
+    """).toPandas()
 
     total = len(passed_chunks_df)
     print(f"Loaded {total} prefiltered chunks")
