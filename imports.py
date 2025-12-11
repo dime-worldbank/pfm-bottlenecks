@@ -32,3 +32,11 @@
 # COMMAND ----------
 
 # MAGIC %run ./evidence_validation
+
+# COMMAND ----------
+
+# MAGIC %run ./evidence_reflection
+
+# COMMAND ----------
+
+# MAGIC %run ./evidence_summarization

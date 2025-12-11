@@ -3,7 +3,6 @@
 
 # COMMAND ----------
 
-# Run document ingestion
 run_document_ingestion(SCHEMA, DOCS_METADATA_TABLE, CHUNKS_TABLE)
 
 
@@ -18,7 +17,7 @@ run_prefilter(
 
 # COMMAND ----------
 
-BOTTLENECK_ID = '3.1'
+BOTTLENECK_ID = '2.1'
 
 # COMMAND ----------
 
@@ -40,10 +39,19 @@ run_validation(
 
 # COMMAND ----------
 
-# final summary and additional infromation extraction
+run_reflection(
+    schema=SCHEMA,
+    bottleneck_id=BOTTLENECK_ID,
+)
+
+# COMMAND ----------
+
 run_summary_generation(
     schema=SCHEMA,
     bottleneck_id=BOTTLENECK_ID,
+    source_stage="validation", # change to "reflection" if source data is post reflection
     doc_metadata_table=DOCS_METADATA_TABLE,
-    chunks_table=CHUNKS_TABLE
+    chunks_table=CHUNKS_TABLE, 
 )
+
+
