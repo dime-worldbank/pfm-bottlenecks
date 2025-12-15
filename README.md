@@ -104,7 +104,7 @@ run_summary_generation(
 | `evidence_reflection` | Additional step to filter out false positives through a reflection step |
 | `evidence_summarization` | Generate additional useful information and stand-alone summaries from validated evidence |
 | `bottleneck_schemas` | Cues, hard negatives, acceptance rules per bottleneck |
-| `bottleneck_definitions` | 31 Outcome-Specific Sub-Bottleneck definitions across 8 Bottlenecks |
+| `bottleneck_definitions` | 31 Sub-Bottleneck definitions across 8 Bottlenecks |
 | `service` | Azure OpenAI + instructor wrapper |
 | `imports` | Consolidated way to import all required modules using `%run`|
 | `consts` | Consolidated place for variables, parameters and system prompts|
