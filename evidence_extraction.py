@@ -1,197 +1,183 @@
+# Databricks notebook source
+# MAGIC %pip install -U "pydantic>=2.4,<3" instructor openai azure-identity sentence-transformers
+
+# COMMAND ----------
+
+# MAGIC %run ./service
+
+# COMMAND ----------
+
+# MAGIC %run ./consts
+
+# COMMAND ----------
+
+# MAGIC %run ./bottleneck_definitions
+
+# COMMAND ----------
+
 """
-Evidence Extraction Stage - Extracts specific evidence spans for bottlenecks.
-This is Stage 3 of the pipeline, coming after classification and before agentic validation.
+Evidence Extractor - Extract potential evidence from prefiltered chunks.
+Run once per bottleneck. Results are stable unless source changes.
 """
 
-from typing import Optional, List, Dict
-from enum import Enum
+import pandas as pd
 from pydantic import BaseModel, Field
+from enum import Enum
+from typing import Optional
+from tqdm import tqdm
 
-try:
-    from .service import Service
-    from .consts import DEFAULT_LLM_MODEL
-    from .bottleneck_definitions import load_bottlenecks
-    from .bottleneck_context import BottleneckContext
-except ImportError:
-    from service import Service
-    from consts import DEFAULT_LLM_MODEL
-    from bottleneck_definitions import load_bottlenecks
-    from bottleneck_context import BottleneckContext
-
-
-class ExtractionConfidence(str, Enum):
-    """Confidence level for extracted evidence."""
+class ConfidenceLevel(str, Enum):
     strong = "strong"
-    moderate = "moderate"  
+    borderline = "borderline"
     weak = "weak"
 
-
 class ExtractedEvidence(BaseModel):
-    """Model for extracted evidence from a chunk."""
-    bottleneck_id: str = Field(..., description="The bottleneck ID (e.g., '1.1', '3.2')")
-    
-    evidence_span: str = Field(
-        ..., 
-        description="Verbatim excerpt from the chunk that provides evidence for the bottleneck. Must be exact text."
+    """Extraction output - run once per bottleneck."""
+
+    extracted_evidence: Optional[str] = Field(
+        None,
+        description="Verbatim excerpt that may support the bottleneck"
     )
-    
-    confidence: ExtractionConfidence = Field(
+    confidence: ConfidenceLevel = Field(
         ...,
-        description=(
-            "Confidence in the extraction: "
-            "'strong' if evidence clearly and directly supports the bottleneck, "
-            "'moderate' if somewhat relevant but open to interpretation, "
-            "'weak' if tenuous or only indirectly related"
-        )
+        description="Confidence level"
     )
-    
-    reasoning: str = Field(
-        ...,
-        description="Brief explanation of how the extracted text demonstrates the bottleneck (1-2 sentences)"
+    reasoning: Optional[str] = Field(
+        None,
+        description="Brief explanation of why this excerpt was extracted"
     )
-    
-    span_start: Optional[int] = Field(None, description="Start position of evidence in chunk")
-    span_end: Optional[int] = Field(None, description="End position of evidence in chunk")
-
-
-class MultipleExtractions(BaseModel):
-    """Container for multiple evidence extractions from a single chunk."""
-    extractions: List[ExtractedEvidence] = Field(
-        default_factory=list,
-        description="List of extracted evidence spans, can be empty if no evidence found"
-    )
-    
-    def has_evidence(self) -> bool:
-        """Check if any evidence was extracted."""
-        return len(self.extractions) > 0
-    
-    def get_strong_evidence(self) -> List[ExtractedEvidence]:
-        """Get only strong confidence extractions."""
-        return [e for e in self.extractions if e.confidence == ExtractionConfidence.strong]
-    
-    def get_by_bottleneck(self, bottleneck_id: str) -> Optional[ExtractedEvidence]:
-        """Get extraction for specific bottleneck."""
-        for e in self.extractions:
-            if e.bottleneck_id == bottleneck_id:
-                return e
-        return None
-
 
 class EvidenceExtractor:
-    """Agent that extracts specific evidence spans for bottlenecks."""
-    
-    def __init__(self, service: Optional[Service] = None, model: Optional[str] = None):
-        self.service = service or Service()
-        self.model = model or DEFAULT_LLM_MODEL
-        self.bottlenecks = load_bottlenecks()
-    
-    def get_bottleneck_details(self, bottleneck_id: str) -> Dict:
-        """Get details for a specific bottleneck."""
-        challenge_id = int(bottleneck_id.split('.')[0])
-        challenge = self.bottlenecks['challenges'].get(challenge_id)
-        
-        if not challenge:
-            raise ValueError(f"Challenge {challenge_id} not found")
-        
-        for bottleneck in challenge['bottlenecks']:
-            if bottleneck['id'] == bottleneck_id:
+    def __init__(self, bottleneck_id: str, service: Service, model: str = LLM_MODEL):
+        self.bottleneck_id = bottleneck_id
+        self.service = service
+        self.model = model
+        self.definition = self._load_definition()
+
+    def _load_definition(self) -> dict:
+        #TODO: Remove this helper function and import the function with the bottleneck id as parameter
+        data = load_bottlenecks()
+        challenge_id = int(self.bottleneck_id.split('.')[0])
+        challenge = data['challenges'][challenge_id]
+
+        for bn in challenge['bottlenecks']:
+            if bn['id'] == self.bottleneck_id:
                 return {
-                    'id': bottleneck_id,
-                    'name': bottleneck['name'],
-                    'description': bottleneck['description'],
+                    'id': bn['id'],
+                    'name': bn['name'],
+                    'description': bn['description'],
+                    'extended_definition': bn.get('extended_definition', ''),
                     'challenge_name': challenge['name'],
-                    'challenge_description': challenge.get('description', '')
+                    'challenge_description': challenge['description']
                 }
-        
-        raise ValueError(f"Bottleneck {bottleneck_id} not found")
-    
-    def build_extraction_prompt(self, chunk_text: str, bottleneck_id: str) -> str:
-        """Build prompt for extracting evidence for a specific bottleneck."""
-        bottleneck = self.get_bottleneck_details(bottleneck_id)
-        context = BottleneckContext.get_context(bottleneck_id)
-        enhanced_context = BottleneckContext.format_context_for_prompt(bottleneck_id)
-        
-        # Get extraction guidance from the context
-        extraction_guidance = context.get("extraction_guidance", "Extract specific evidence that directly demonstrates this bottleneck.")
-        
-        return f"""Extract specific evidence from the text that demonstrates the presence of a public finance management bottleneck.
+        raise ValueError(f"Bottleneck {self.bottleneck_id} not found")
 
-BOTTLENECK DETAILS:
-ID: {bottleneck['id']}
-Name: {bottleneck['name']}
-Description: {bottleneck['description']}
+    def extract_chunk(self, chunk_text: str, node_id: str, chunk_id: str) -> ExtractedEvidence:
+        prompt = self._build_extraction_prompt(chunk_text)
 
-Challenge Context: {bottleneck['challenge_name']}
-
-{enhanced_context}
-
-EXTRACTION GUIDANCE:
-{extraction_guidance}
-
-TEXT TO ANALYZE:
-{chunk_text}
-
-TASK:
-1. Identify the SINGLE MOST RELEVANT and LONGEST continuous span of text that provides evidence for bottleneck {bottleneck_id}
-2. Extract the longest possible verbatim excerpt - prefer comprehensive passages over short phrases
-3. The span should be a continuous excerpt (not combining separate parts)
-4. Extract ONLY direct quotes from the text - do not paraphrase or summarize
-5. Focus on specific, concrete evidence rather than general statements
-6. The evidence should directly relate to the bottleneck definition
-
-Provide your extraction with:
-- evidence_span: Exact verbatim text from the chunk (as long as possible, continuous)
-- confidence: 'strong', 'moderate', or 'weak'
-- reasoning: Brief explanation of how this text demonstrates the bottleneck
-
-If no relevant evidence is found, return an empty extraction with empty evidence_span."""
-    
-    def extract_evidence(
-        self, 
-        chunk_text: str, 
-        bottleneck_id: str
-    ) -> Optional[ExtractedEvidence]:
-        """Extract evidence for a specific bottleneck from a chunk."""
-        prompt = self.build_extraction_prompt(chunk_text, bottleneck_id)
-        
-        system_message = """You are an expert at extracting specific evidence from text.
-Your role is to identify the longest possible verbatim quote that provides concrete evidence for public finance management bottlenecks.
-Extract comprehensive passages rather than short phrases - the goal is to capture the full context and all relevant details in a single continuous span.
-Be precise - extract exact text from the source, but prefer longer excerpts that tell the complete story."""
-        
-        result = self.service.execute(
+        evidence: ExtractedEvidence = self.service.execute(
             prompt=prompt,
             model=self.model,
             response_model=ExtractedEvidence,
-            temperature=0.1,  # Very low temperature for precise extraction
-            system_message=system_message
+            system_message="You are a public finance expert extracting evidence from fiscal diagnostic reports."
         )
-        
-        # Set the bottleneck_id
-        result.bottleneck_id = bottleneck_id
-        
-        # Find span positions if possible
-        if result.evidence_span and result.evidence_span in chunk_text:
-            result.span_start = chunk_text.find(result.evidence_span)
-            result.span_end = result.span_start + len(result.evidence_span)
-        
-        # Return None if extraction is too weak or no evidence found
-        if not result.evidence_span or result.confidence == ExtractionConfidence.weak:
-            return None
-            
-        return result
-    
-    def extract_multiple(
-        self, 
-        chunk_text: str, 
-        bottleneck_ids: List[str]
-    ) -> MultipleExtractions:
-        """Extract evidence for multiple bottlenecks from a single chunk."""
-        extractions = []
-        
-        for bottleneck_id in bottleneck_ids:
-            evidence = self.extract_evidence(chunk_text, bottleneck_id)
-            if evidence:
-                extractions.append(evidence)
-        
-        return MultipleExtractions(extractions=extractions)
+        evidence_dict = evidence.model_dump()
+        evidence_dict["node_id"] = node_id
+        evidence_dict["chunk_id"] = chunk_id
+        evidence_dict["bottleneck_id"] = self.bottleneck_id
+
+        return evidence_dict
+
+    def _build_extraction_prompt(self, chunk_text: str) -> str:
+        definition = self.definition
+
+        return f"""You are analyzing a public finance document to extract evidence for a specific bottleneck.
+
+        BOTTLENECK:
+        {definition['name']}
+
+        DESCRIPTION:
+        {definition['description']}
+
+        EXTENDED DEFINITION:
+        {definition.get('extended_definition') or definition['description']}
+
+        CHALLENGE CONTEXT:
+        {definition['challenge_name']} - {definition['challenge_description']}
+
+        TEXT TO ANALYZE:
+        {chunk_text}
+
+        TASK:
+        - Extract verbatim text that provides evidence for this bottleneck
+        - Only extract text that is explicitly present
+        - If no clear evidence exists, return null for extracted_evidence
+        - Indicate confidence: strong (clear match), borderline (partial/indirect), weak (tenuous)
+        - Provide brief reasoning for your extraction
+
+        Do not infer or paraphrase - extract exact quotes only.
+        """
+
+def run_evidence_extraction(schema: str, source_table: str, prefilter_results_table: str, bottleneck_id: str):
+    """Extract evidence from prefiltered chunks and save to table."""
+
+    extractions_table = f"rpf_bottleneck_{bottleneck_id.replace('.', '_')}_extractions"
+    extraction_evidence_exist = spark.catalog.tableExists(f"{schema}.{extractions_table}")
+
+    if extraction_evidence_exist:
+        print(f"Skipping evidence extraction for {bottleneck_id} as table {schema}.{extractions_table} already exists")
+        return
+
+    passed_chunks_df = spark.sql(f"""
+        SELECT c.*
+        FROM {schema}.{source_table} c
+        JOIN {schema}.{prefilter_results_table} r
+          ON c.node_id = r.node_id AND c.chunk_id = r.chunk_id
+        WHERE r.prefilter_passed = true
+    """).toPandas()
+
+    total = len(passed_chunks_df)
+    print(f"Loaded {total} prefiltered chunks")
+
+    if total == 0:
+        print("No chunks to extract")
+        return
+
+    service = Service(dbutils)
+    extractor = EvidenceExtractor(bottleneck_id, service)
+
+    results = []
+    for idx, row in tqdm(passed_chunks_df.iterrows(), total=passed_chunks_df.shape[0]):
+        chunk_id = row['chunk_id']
+        chunk_text = row['text']
+        node_id = row['node_id']
+        try:
+            # Now returns a dict (LLM output + metadata)
+            row_dict = extractor.extract_chunk(chunk_text, node_id, chunk_id)
+            results.append(row_dict)
+
+        except Exception as e:
+            print(f"  Error extracting chunk {chunk_id}: {str(e)}")
+            results.append({
+                'node_id': node_id,
+                'chunk_id': chunk_id,
+                'bottleneck_id': bottleneck_id,
+                'extracted_evidence': None,
+                'confidence': 'weak',
+                'reasoning': f"Extraction error: {str(e)}"
+            })
+
+    print(f"Completed extraction: {total} chunks")
+
+    results_df = pd.DataFrame(results)
+    spark_results = spark.createDataFrame(results_df)
+    spark_results.write.mode("overwrite").saveAsTable(f"{schema}.{extractions_table}")
+
+    extracted_count = results_df['extracted_evidence'].notna().sum()
+    print(f"Saved to {schema}.{extractions_table}")
+    print(f"Extracted evidence in {extracted_count} chunks")
+
+
+# COMMAND ----------
+
+
