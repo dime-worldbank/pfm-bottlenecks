@@ -145,16 +145,3 @@ Per bottleneck (e.g., 6.1):
 3. Run validation step (iterate until required precision is acheived)
 4. Run reflection step (once to potentially remove more flase positives)
 5. Run summarization step for summaries and additional information
-
-## Notes
-
-1. Due to issues with imports from .py files I converted everything to notebooks and the imports are handled by running `%run imports` in the `pipeline_runner`.
-
-## TODO:
-
-1. See if the current format for validation is sufficiently flexible to accomodate the changes across bottlenecks
-2. Extract extended definitions from the new PFM document to update `bottleneck_definitions`
-3. Add databricks pipeline to aggregate final summary tables (after joining with `pfm_document_data` table) into one table for all bottlenecks
-4. Change condition to check for specific (node_id, chunk_id) pairs to skip certain steps in pipeline_runner. Currently, we check for existence of table which is insufficient
-5. Add a new nnotebook to compute the precision against expert annotated data from the volume
-6. Add helper function to format the output into an excel file for update and sharing
