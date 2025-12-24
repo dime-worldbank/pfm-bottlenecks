@@ -212,7 +212,7 @@ class BottleneckProcessor:
     ) -> dict:
         matched_subschemas = []
         subschema_results = []
-
+        # TODO: Avoid using the loop here (high token usage). Find a better way for finding the appropriate subschema (could use semantic similarity with threshold)
         for i, subschema in enumerate(self.schema):
             prompt = self._build_validation_prompt(extracted_text, subschema)
 
