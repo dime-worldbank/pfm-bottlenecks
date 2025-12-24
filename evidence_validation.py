@@ -237,7 +237,7 @@ class BottleneckProcessor:
             "chunk_id": chunk_id,
             "bottleneck_id": self.bottleneck_id,
             "matched_subschemas": matched_subschemas,
-            "should_admit": len(matched_subschemas) > 0,
+            "decision": len(matched_subschemas) > 0,
             "subschema_results": subschema_results,
         }
 
@@ -339,7 +339,7 @@ def run_validation(schema: str, bottleneck_id: str, overwrite: bool = False):
         try:
             row_dict = processor.validate_extraction(extracted_text, node_id, chunk_id)
             if is_multi_subschema:
-                row_dict["is_bottleneck_evidence"] = row_dict["should_admit"]
+                row_dict["is_bottleneck_evidence"] = row_dict["decision"]
             results.append(row_dict)
         except Exception as e:
             print(f"  Error validating chunk {chunk_id}: {str(e)}")
@@ -353,7 +353,7 @@ def run_validation(schema: str, bottleneck_id: str, overwrite: bool = False):
             if is_multi_subschema:
                 error_result.update({
                     "matched_subschemas": [],
-                    "should_admit": False,
+                    "decision": False,
                     "subschema_results": [],
                 })
             else:

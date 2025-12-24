@@ -49,7 +49,7 @@ run_reflection(
 run_summary_generation(
     schema=SCHEMA,
     bottleneck_id=BOTTLENECK_ID,
-    source_stage="validation", # change to "reflection" or "validation" depending on the source data
+    source_stage="reflection", # change to "reflection" or "validation" depending on the source data
     doc_metadata_table=DOCS_METADATA_TABLE,
     chunks_table=CHUNKS_TABLE, 
 )
