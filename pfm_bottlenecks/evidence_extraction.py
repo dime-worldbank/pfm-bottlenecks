@@ -1,20 +1,3 @@
-# Databricks notebook source
-# MAGIC %pip install -U "pydantic>=2.4,<3" instructor openai azure-identity sentence-transformers
-
-# COMMAND ----------
-
-# MAGIC %run ./service
-
-# COMMAND ----------
-
-# MAGIC %run ./consts
-
-# COMMAND ----------
-
-# MAGIC %run ./bottleneck_definitions
-
-# COMMAND ----------
-
 """
 Evidence Extractor - Extract potential evidence from prefiltered chunks.
 Run once per bottleneck. Results are stable unless source changes.
@@ -25,6 +8,10 @@ from pydantic import BaseModel, Field
 from enum import Enum
 from typing import Optional
 from tqdm import tqdm
+from pyspark.sql import SparkSession
+from pfm_bottlenecks.service import Service
+from pfm_bottlenecks.bottleneck_definitions import load_bottleneck_definition
+from pfm_bottlenecks.consts import LLM_MODEL
 
 class ConfidenceLevel(str, Enum):
     strong = "strong"
@@ -52,25 +39,7 @@ class EvidenceExtractor:
         self.bottleneck_id = bottleneck_id
         self.service = service
         self.model = model
-        self.definition = self._load_definition()
-
-    def _load_definition(self) -> dict:
-        #TODO: Remove this helper function and import the function with the bottleneck id as parameter
-        data = load_bottlenecks()
-        challenge_id = int(self.bottleneck_id.split('.')[0])
-        challenge = data['challenges'][challenge_id]
-
-        for bn in challenge['bottlenecks']:
-            if bn['id'] == self.bottleneck_id:
-                return {
-                    'id': bn['id'],
-                    'name': bn['name'],
-                    'description': bn['description'],
-                    'extended_definition': bn.get('extended_definition', ''),
-                    'challenge_name': challenge['name'],
-                    'challenge_description': challenge['description']
-                }
-        raise ValueError(f"Bottleneck {self.bottleneck_id} not found")
+        self.definition = load_bottleneck_definition(bottleneck_id)
 
     def extract_chunk(self, chunk_text: str, node_id: str, chunk_id: str) -> ExtractedEvidence:
         prompt = self._build_extraction_prompt(chunk_text)
@@ -118,7 +87,7 @@ class EvidenceExtractor:
         Do not infer or paraphrase - extract exact quotes only.
         """
 
-def run_evidence_extraction(schema: str, source_table: str, prefilter_results_table: str, bottleneck_id: str):
+def run_extraction(spark: SparkSession, service: Service, schema: str, source_table: str, prefilter_results_table: str, bottleneck_id: str):
     """Extract evidence from prefiltered chunks and save to table."""
 
     extractions_table = f"rpf_bottleneck_{bottleneck_id.replace('.', '_')}_extractions"
@@ -143,7 +112,6 @@ def run_evidence_extraction(schema: str, source_table: str, prefilter_results_ta
         print("No chunks to extract")
         return
 
-    service = Service(dbutils)
     extractor = EvidenceExtractor(bottleneck_id, service)
 
     results = []
@@ -176,8 +144,3 @@ def run_evidence_extraction(schema: str, source_table: str, prefilter_results_ta
     extracted_count = results_df['extracted_evidence'].notna().sum()
     print(f"Saved to {schema}.{extractions_table}")
     print(f"Extracted evidence in {extracted_count} chunks")
-
-
-# COMMAND ----------
-
-

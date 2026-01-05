@@ -1,4 +1,3 @@
-# Databricks notebook source
 from __future__ import annotations
 
 from typing import Optional, Type
@@ -79,8 +78,4 @@ class Service:
             temperature=temperature,
             max_tokens=max_tokens,
         )
-
-
-# COMMAND ----------
-
 

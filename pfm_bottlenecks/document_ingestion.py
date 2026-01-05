@@ -1,9 +1,7 @@
-# Databricks notebook source
 import requests
 from tqdm import tqdm
 import pandas as pd
-
-# COMMAND ----------
+from pyspark.sql import SparkSession
 
 # helper function for chunking
 splitting_expr = '\r\n\r\n'
@@ -16,9 +14,7 @@ def chunk_text_by_chars(text, max_chars=5000):
     return chunks
 
 
-# COMMAND ----------
-
-def run_document_ingestion(schema: str, docs_table: str, chunks_table: str):
+def run_document_ingestion(spark: SparkSession, schema: str, docs_table: str, chunks_table: str):
     """Download PER/PFR documents, chunk them, and save to Databricks tables."""
 
     full_docs_table = f"{schema}.{docs_table}"
@@ -60,6 +56,7 @@ def run_document_ingestion(schema: str, docs_table: str, chunks_table: str):
     AND disclsr_stat_name = 'Disclosed'
     ORDER BY doc_date DESC
     """
+    # TODO: parameterize cntry_name
 
     filtered_df = spark.sql(query).toPandas()
     print(f"Found {len(filtered_df)} PER/PFR documents")

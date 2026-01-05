@@ -1,12 +1,3 @@
-# Databricks notebook source
-# MAGIC %run ./bottleneck_definitions
-
-# COMMAND ----------
-
-# MAGIC %run ./consts
-
-# COMMAND ----------
-
 """
 Pre-Filter using dense embeddings only.
 """
@@ -14,8 +5,10 @@ Pre-Filter using dense embeddings only.
 import numpy as np
 import pandas as pd
 from typing import List
-from pyspark.sql.functions import col
 from sentence_transformers import SentenceTransformer
+from pyspark.sql import SparkSession
+from pfm_bottlenecks.consts import LOCAL_EMBEDDINGS_MODEL
+from pfm_bottlenecks.bottleneck_definitions import BOTTLENECK_DATA
 
 
 def _l2_normalize(x: np.ndarray, eps: float = 1e-12) -> np.ndarray:
@@ -40,13 +33,12 @@ class PreFilter:
         self.dtype = dtype
         self.encoder = SentenceTransformer(embedding_model)
 
-        self.bottleneck_data = load_bottlenecks()
         self._create_reference_embeddings()
 
     def _create_reference_embeddings(self):
         reference_texts: List[str] = []
 
-        for challenge in self.bottleneck_data["challenges"].values():
+        for challenge in BOTTLENECK_DATA["challenges"].values():
             for bottleneck in challenge["bottlenecks"]:
                 text = f"{bottleneck['name']}. {bottleneck['description']}"
                 reference_texts.append(text)
@@ -108,11 +100,7 @@ class PreFilter:
         return [float(sim) for sim in max_sims]
 
 
-
-# COMMAND ----------
-
-
-def run_prefilter(schema: str, source_table: str, results_table: str, threshold: float = 0.55):
+def run_prefilter(spark: SparkSession, schema: str, source_table: str, results_table: str, threshold: float = 0.55):
     """Run prefilter on new chunks and save results to Databricks table."""
 
     source_df = spark.table(f"{schema}.{source_table}").select("node_id", "chunk_id").toPandas()
@@ -157,4 +145,3 @@ def run_prefilter(schema: str, source_table: str, results_table: str, threshold:
     total_passed = total_df['prefilter_passed'].sum()
     total_count = len(total_df)
     print(f"Total: {total_count} | Passed: {total_passed} ({100*total_passed/total_count:.1f}%)")
-

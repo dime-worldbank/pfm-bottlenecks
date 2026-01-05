@@ -1,0 +1,54 @@
+[project]
+name = "pfm-bottlenecks"
+version = "0.1.0"
+description = "PFM Bottleneck Analysis System for World Bank documents"
+readme = "README.md"
+requires-python = ">=3.9"
+
+dependencies = [
+    "pandas>=2.0.0",
+    "pydantic>=2.4,<3",
+    "tqdm>=4.65.0",
+    "requests>=2.31.0",
+    "numpy>=1.24.0",
+    "sentence-transformers>=2.2.0",
+    "openai>=1.0.0",
+    "azure-identity>=1.14.0",
+    "instructor>=0.4.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.4.0",
+]
+
+dev = [
+    "pytest>=7.4.0",
+    "ruff>=0.1.0",
+]
+
+# Note: PySpark is typically provided by Databricks runtime
+# For local development/testing that requires PySpark, install separately:
+# uv pip install pyspark
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pfm_bottlenecks"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N"]
+ignore = ["E501"]
