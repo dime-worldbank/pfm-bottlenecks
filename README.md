@@ -66,8 +66,7 @@ The main entry point is the `pipeline_runner` notebook.
 | `evidence_validation` | Validate extractions against schema cues and decide if ecidence span is valid evidence |
 | `evidence_reflection` | Additional step to filter out false positives through a reflection step |
 | `evidence_summarization` | Generate additional useful information and stand-alone summaries from validated evidence |
-| `bottleneck_schemas` | Cues, hard negatives, acceptance rules per bottleneck |
-| `bottleneck_definitions` | 31 Sub-Bottleneck definitions across 8 Bottlenecks |
+| `bottleneck_definitions` | 31 Sub-Bottleneck definitions and validation schemas across 8 Challenges |
 | `service` | Azure OpenAI + instructor wrapper |
 | `consts` | Consolidated place for variables, parameters and system prompts|
 
@@ -75,7 +74,7 @@ The main entry point is the `pipeline_runner` notebook.
 
 ### Validation Schema
 
-Each bottleneck has a schema in `bottleneck_schemas`:
+Each bottleneck can have a validation schema defined in `bottleneck_definitions` (currently 3 out of 31 have schemas):
 
 - **Strong cues**: Any ONE is sufficient for acceptance
 - **Moderate cues**: Need TWO or more
@@ -102,8 +101,42 @@ Per bottleneck (e.g., 6.1):
 
 ## Adding New Bottlenecks
 
-1. Update schema in `bottleneck_schemas` with cues and hard negatives
+1. Update schema in `bottleneck_definitions` with cues and hard negatives for the bottleneck
 2. Run extraction step (once)
 3. Run validation step (iterate until required precision is acheived)
 4. Run reflection step (once to potentially remove more flase positives)
 5. Run summarization step for summaries and additional information
+
+## Local Development Setup
+
+This project uses [uv](https://github.com/astral-sh/uv) for dependency management. Ensure it is installed in order to run unit tests locally.
+
+### Set up the environment
+
+```bash
+# Create a virtual environment and install dependencies
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install test dependencies
+uv pip install -e ".[test]"
+
+# Or install all dev dependencies (includes linting tools)
+uv pip install -e ".[dev]"
+```
+
+## Running Tests
+
+Unit tests are located in the `tests/` directory.
+
+### Run all tests with pytest
+
+```bash
+pytest tests/ -v
+```
+
+### Run specific test file
+
+```bash
+pytest tests/test_bottleneck_definitions.py -v
+```

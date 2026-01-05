@@ -16,9 +16,9 @@ import pandas as pd
 from pydantic import BaseModel, Field
 from tqdm import tqdm
 from pyspark.sql import SparkSession
-from service import Service
-from bottleneck_definitions import load_bottleneck_definition
-from consts import LLM_MODEL
+from pfm_bottlenecks.service import Service
+from pfm_bottlenecks.bottleneck_definitions import load_bottleneck_definition
+from pfm_bottlenecks.consts import LLM_MODEL
 
 
 class ExtractedInfo(BaseModel):

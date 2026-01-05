@@ -7,8 +7,8 @@ import pandas as pd
 from typing import List
 from sentence_transformers import SentenceTransformer
 from pyspark.sql import SparkSession
-from consts import LOCAL_EMBEDDINGS_MODEL
-from bottleneck_definitions import BOTTLENECK_DATA
+from pfm_bottlenecks.consts import LOCAL_EMBEDDINGS_MODEL
+from pfm_bottlenecks.bottleneck_definitions import BOTTLENECK_DATA
 
 
 def _l2_normalize(x: np.ndarray, eps: float = 1e-12) -> np.ndarray:

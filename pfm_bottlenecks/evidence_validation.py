@@ -8,10 +8,9 @@ from enum import Enum
 from typing import List
 from pydantic import BaseModel, Field
 from pyspark.sql import SparkSession
-from service import Service
-from bottleneck_definitions import load_bottleneck_definition
-from bottleneck_schemas import get_schema
-from consts import LLM_MODEL, VALIDATION_SYSTEM_PROMPT
+from pfm_bottlenecks.service import Service
+from pfm_bottlenecks.bottleneck_definitions import load_bottleneck_definition, get_schema
+from pfm_bottlenecks.consts import LLM_MODEL, VALIDATION_SYSTEM_PROMPT
 
 def build_validation_model(bottleneck_id: str, subschema: dict, subschema_index: int = 0):
 

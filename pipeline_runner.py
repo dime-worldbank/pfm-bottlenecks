@@ -7,14 +7,14 @@
 
 # COMMAND ----------
 
-from document_ingestion import run_document_ingestion
-from prefilter import run_prefilter
-from evidence_extraction import run_extraction
-from evidence_validation import run_validation
-from evidence_reflection import run_reflection
-from evidence_summarization import run_summary_generation
-from service import Service
-from consts import *
+from pfm_bottlenecks.document_ingestion import run_document_ingestion
+from pfm_bottlenecks.prefilter import run_prefilter
+from pfm_bottlenecks.evidence_extraction import run_extraction
+from pfm_bottlenecks.evidence_validation import run_validation
+from pfm_bottlenecks.evidence_reflection import run_reflection
+from pfm_bottlenecks.evidence_summarization import run_summary_generation
+from pfm_bottlenecks.service import Service
+from pfm_bottlenecks.consts import *
 
 # COMMAND ----------
 
