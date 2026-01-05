@@ -1,5 +1,5 @@
 """
-Bottleneck definitions - all 28 bottlenecks across 9 challenges.
+Bottleneck definitions - all 32 bottlenecks across 8 challenges.
 Used by PreFilter for embedding-based similarity matching.
 """
 
@@ -16,28 +16,28 @@ BOTTLENECK_DATA = {
                 {
                     'id': '1.1',
                     'name': 'Inadequate commitment of political and technical leadership to policy action and associated resource mobilization and use within or across sectors',
-                    'description': 'Whist approved policies may state desired policy actions to achieve outcomes, neither politicians nor technocrats may be committed to driving the required action when this may require disrupting the status quo an/or changes in resource deployment and actions which adversely affect some stakeholders.',
+                    'description': 'Whilst approved policies may state desired policy actions to achieve outcomes, neither politicians nor technocrats may be committed to driving the required action, especially when this may require disrupting the status quo and/or changes in resource deployment and actions which adversely affect some stakeholders.',
                     'extended_definition': ''
                 },
                 {
                     'id': '1.2',
                     'name': 'Inadequately broad-based stakeholder involvement, understanding and support for policy action and associated resource mobilization and use',
-                    'description': 'Policy discussions and decisions happen within a narrow group of actors, with no significant involvement of relevant stakeholders, including service providers and beneficiaries. This limits the political acceptability of government policies, and the overall commitment to their implementation. It can also result in a disconnect between policies and actual demand for them.',
+                    'description': 'Policy discussions and decisions happen within a narrow group of actors, with no meaningful involvement of relevant stakeholders inside or outside the public sector, including service providers and beneficiaries. This limits the political acceptability of government policies, and the overall commitment to their implementation. It can also result in a disconnect between policies and actual needs and demand for them.',
                     'extended_definition': ''
                 },
             ]
         },
         2: {
-            'name': 'Incoherence and fragmentation of policy',
+            'name': 'Incoherence between policy goals, context and available resources',
             'description': (
-                "Policies are inconsistent, overlapping or contradictory across/within sectors due to siloed design, "
-                "weak coordination, and duplicative mandates—making implementation difficult."
+                "Policies proliferate, are poorly coordinated, inconsistent, aspirational, and unaffordable, "
+                "without taking into account fiscal reality, costs, or organizational capability."
             ),
             'bottlenecks': [
                 {
                     'id': '2.1',
                     'name': 'Fragmented, inconsistent and uncoordinated policies across or within sectors',
-                    'description': 'Different government policies, both sectoral and cross-sectoral, are designed without taking into account the constraints and/or complementarities that exist due to other government policies and commitments. This can be due to bureaucratic silos, management incentives or external donor support, and results in policies that are inconsistent and difficult to implement, or in unnecessary duplications and overlaps.',
+                    'description': 'Different government policies, both sectoral and cross-sectoral, tend to proliferate, be poorly coordinated and be inconsistent with each other as they are designed by different stakeholders without taking into account constraints and/or complementarities that exist due to other government policies and commitments. This can be due to bureaucratic silos, management incentives or external donor support, and results in policies that are inconsistent and difficult to implement, or in unnecessary duplications and overlaps.',
                     'extended_definition': """Fragmentation manifests both within and across sectors when policy design does not consider interdependencies, complementarities, or broader strategic frameworks. Examples include:
 - Malawi: Donor funding locked into vertical disease-specific programs despite national Health Benefits Package consensus
 - Kenya: Overlapping youth skills initiatives creating inefficiencies and blurred accountability
@@ -48,100 +48,109 @@ BOTTLENECK_DATA = {
 - Vietnam: Solar feed-in tariffs without parallel transmission infrastructure investment created bottlenecks
 - Kenya: Power generation capacity tripled but poor alignment with demand led to stranded assets"""
                 },
+                {
+                    'id': '2.2',
+                    'name': 'Public policies are not prioritized and are unaffordable given their cost and fiscal reality',
+                    'description': 'Policy objectives are often aspirational and poorly prioritized. They do not take into account financial affordability and are not based on accurate and reliable costing. Delivery models, which often involve direct public delivery, crowd out potentially more cost-effective alternative models. Policies and strategies do not take into account medium- and long-term resource availability. This disconnect with fiscal reality undermines governments\' capacity to deliver on policy objectives individually and collectively.',
+                    'extended_definition': ''
+                },
+                {
+                    'id': '2.3',
+                    'name': 'Policies are poorly designed do not take into account context, including the available organizational capability to achieve goals',
+                    'description': 'Policies may not consider or elaborate how they will be implemented and a take into account existing available and required capabilities (including skills, systems and institutions etc.), interests (of politicians, the private sector, and citizens) and behavioral norms (culture, society). This means that they cannot be implemented as intended and objectives cannot be achieved.',
+                    'extended_definition': ''
+                },
             ]
         },
         3: {
-            'name': 'Inadequate Revenue Mobilization and Management',
+            'name': 'Unsustainable fiscal situation of governments and organizations',
             'description': (
-                "Public revenues are insufficient or poorly managed, and fiscal policy is weakly aligned to stated outcomes; "
-                "issues include low tax effort, leakages, weak pooling/transfers, and misaligned incentives."
+                "Short-term perspectives, biased forecasting, weak debt management, budget rigidity, and financial "
+                "unviability of providers undermine fiscal sustainability and reduce fiscal space."
             ),
             'bottlenecks': [
                 {
                     'id': '3.1',
-                    'name': 'Insufficient revenue mobilization',
-                    'description': 'Insufficient revenue mobilization efforts relative to the potential of the economy. Government revenues to fund public goods and services are often not adequate, and revenue mobilization efforts are hampered by weak systems, avoidance and inadequate governance.',
+                    'name': 'Short term incentives and perspectives leads to a failure to manage trade offstradeoffs and pro-cyclical spending which forces deep cuts during downturns',
+                    'description': 'The lack of a medium- to long-term focus in fiscal policy formulation means governments fail to prioritize and manage trade-offs over time, and subsequently react to shocks in pro-cyclical ways, raising spending (or cutting taxes) during good times and having to reduce spending (or raise taxes) drastically during economic downturns. This in turn undermines governments\' capacity to deliver on policy objectives.',
                     'extended_definition': ''
                 },
                 {
                     'id': '3.2',
-                    'name': 'Inefficient government transfer and resource pooling systems',
-                    'description': 'When resources cannot be adequately pooled, it remains difficult to equitably redistribute, and to reduce disparities within and across administrative units. This can drive further fragmentation and affect equity.',
+                    'name': 'Biased or inaccurate fiscal forecasting and unpredictable, volatile resource flows result in budgets being under-funded',
+                    'description': 'Fiscal projections tend to be overly optimistic as they are based on weak models, unrealistic assumptions, insufficient data and/or are influenced by political interests, resulting in overestimating growth rates and revenues. Revenues also tend to be volatile, which coupled with weaknesses in within-year cash planning leads to a chronic shortage of financial resources to adequately fund expenditure',
                     'extended_definition': ''
                 },
                 {
                     'id': '3.3',
-                    'name': 'Fiscal policy not aligned with desired development outcomes',
-                    'description': 'Fiscal policies that are not strongly aligned with stated political or developmental priorities. Fiscal policies may not be clearly linked to desired political or developmental outcomes, resulting in limited efficient use of government resources, and creating missed opportunities for achieving targets.',
+                    'name': 'Un-strategic, ad hoc and supply driven debt management undermines fiscal consolidation and reduces fiscal space',
+                    'description': 'Debt management is not approached strategically, with limited efforts to link borrowing to funding government priorities and actively seeking out the best financing opportunities. Borrowing is often driven by short-term and political considerations, locking governments into higher-cost financing that puts fiscal sustainability at risk.',
+                    'extended_definition': ''
+                },
+                {
+                    'id': '3.4',
+                    'name': 'Pre-existing earmarks and spending commitments create budget rigidity and limit options for fiscal consolidation and/or increasing fiscal space',
+                    'description': 'Spending related to various types of entitlements, earmarking and mandatory servicing of debt obligations limit governments\' options in terms of both reducing spending when needed, of creating space for new spending to fund policy priorities, and of reallocating resources to enhance development impact.',
+                    'extended_definition': ''
+                },
+                {
+                    'id': '3.5',
+                    'name': 'Financial unviability of providers and utilities',
+                    'description': 'Utilities and frontline providers are financially unviable as a result of weak regulatory oversight, inadequate fiscal incentives and cost recovery and unreliable public revenues.',
                     'extended_definition': ''
                 },
             ]
         },
         4: {
-            'name': 'Insufficiencies in spending execution',
+            'name': 'Inadequate and inequitable resources mobilized and deployed',
             'description': (
-                "Spending fails at execution due to rigid structures, poor performance/accountability, and weak monitoring—"
-                "hindering timely, effective implementation and course correction."
+                "Insufficient and unstable revenue mobilization, costly financing, incremental budgeting disconnected "
+                "from priorities, and inequitable resource deployment undermine effective public spending."
             ),
             'bottlenecks': [
                 {
                     'id': '4.1',
-                    'name': 'Institutional structures and management practices that are inflexible',
-                    'description': 'In many settings, institutional structures and arrangements for public service provision are guided by rigid government policies and norms, that prevent officials and administrators from organizing their institutions and work flows in ways that will achieve the most impact with the resources they have available.',
+                    'name': 'Domestic revenue policies generate insufficient and unstable resources - in an inequitable manner- to achieve policy goals given fiscal reality',
+                    'description': 'In many countries, per capita GDP is low and, due to economic structure (large informal sectors, etc.) and weak capacities, governments only collect a limited share of GDP (10-15 percent) in revenues. This limits their fiscal capacity and fiscal space, constraining spending on priority policies aimed at achieving development outcomes. Studies on the financing gap for SDG achievement have shown this clearly. Further, many countries fail to collect taxes in a sustainable manner and thus have to resort to frequent and piecemeal adjustments to either tax rates or bases.',
                     'extended_definition': ''
                 },
                 {
                     'id': '4.2',
-                    'name': 'Weak staff performance management, accountability systems and enforcement',
-                    'description': 'Individual staff performance standards, monitoring and consequences are not adequate. Staff members in public sector posts may not have clear performance standards and expectations, which makes it difficult to drive performance and hold individuals accountable for results.',
+                    'name': 'Inadequate or costly financing mobilized for investment and service delivery',
+                    'description': 'Financing available for funding investment, regulation and service delivery is costly, misaligned with policy priorities, and/or potentially distortionary reducing the impact of public spending.',
                     'extended_definition': ''
                 },
                 {
                     'id': '4.3',
-                    'name': 'Inadequate tools to monitor ongoing implementation at all levels',
-                    'description': 'The lack of consistent, comprehensive data on results and expenditure hampers decision-making and course correction during implementation. In many settings, information systems are fragmented, indicator frameworks are misaligned, and data systems may not be digital or interoperable. This prevents managers and policy-makers from having a clear view of which policies are working and which are not.',
+                    'name': 'Resource raising and deployment is often incremental and disconnected from public policy priorities and delivery mechanisms',
+                    'description': 'Budgets are formulated in an incremental manner and not through a process of strategic prioritization, due to the lack of clear linkages between revenue collection, planning and budgeting, a lack of credibly costed sector policies and strategies, and reluctance to move from the status quo.',
+                    'extended_definition': ''
+                },
+                {
+                    'id': '4.4',
+                    'name': 'Resource deployment is not informed by demand for, the costs of, or performance in achieving public policy objectives',
+                    'description': 'The allocation of financial resources in the budget process is not based on a clear assessment of the actual needs, costs of and performance in achieving policy objectives, undermining strategic resource allocation. .',
+                    'extended_definition': ''
+                },
+                {
+                    'id': '4.5',
+                    'name': 'Unequal and inequitable resource deployment for delivery across geographies and groups and levels of government',
+                    'description': 'Resource allocation and distribution does not take existing inequities in socioeconomic status into account (e.g. geographic, income, gender, etc.) or in access to benefits and services, limiting the effectiveness of public spending in addressing such inequities and broader policy objectives.',
                     'extended_definition': ''
                 },
             ]
         },
         5: {
-            'name': 'Inadequate Budget Allocation and Management',
+            'name': 'Unreliable, delayed and fragmented funding for delivery',
             'description': (
-                "Budgets are misaligned with needs, releases are unpredictable, and virement/line-item rigidity limits within-year "
-                "adjustment; planning and presentation are weak."
+                "Multiple disconnected funding channels, incoherent intergovernmental financing, and shortfalls/delays "
+                "in funding undermine effective resource deployment and service delivery."
             ),
             'bottlenecks': [
                 {
                     'id': '5.1',
-                    'name': 'Inadequate budget allocations and/or misalignment of funding flows with financing needs',
-                    'description': 'In many settings, there is no clear strategic vision from government on how to target limited resources to achieve maximum impact, and there is no process to adequately channel funds to the most impactful areas. Resource allocation may be governed by ad hoc processes, rather than by an effort to align allocations with priority needs.',
-                    'extended_definition': ''
-                },
-                {
-                    'id': '5.2',
-                    'name': 'Unpredictable funding flows',
-                    'description': 'In many settings, approved budgets do not adequately and predictably flow down to sub-national levels and frontline service provider units, making it difficult for these units to plan and implement development priorities.',
-                    'extended_definition': ''
-                },
-                {
-                    'id': '5.3',
-                    'name': 'Inflexible budget policies and procedures',
-                    'description': 'Inflexible budget categories may not align with actual implementation priorities. When budgetary allocations in approved budgets are rigid, within year course corrections become difficult, and inefficiencies may persist.',
-                    'extended_definition': ''
-                },
-            ]
-        },
-        6: {
-            'name': 'Fragmented and uncoordinated deployment of development resources',
-            'description': (
-                "Resources flow through multiple uncoordinated channels (on/off-treasury) with different systems/standards, "
-                "creating duplication, parallel structures, and blurred accountability."
-            ),
-            'bottlenecks': [
-                {
-                    'id': '6.1',
-                    'name': 'Ad hoc, political and fragmented funding channels',
-                    'description': 'Funding for service delivery and projects is fragmented due to different funding sources/channels including budget general funds, earmarked funds, and donor funding with parallel systems. Multiple funding channels without integrated planning create uncertainty, costly administration, and higher corruption risks.',
+                    'name': 'Ad hoc, political and fragmented funding channels contribute to ineffective and inefficient delivery',
+                    'description': 'Governments and public sector entities often rely on multiple and disconnected funding mechanisms to deploy financial resources and reach intended beneficiaries (these can be related to political interference, donor procedures, etc.), generating uncertainty and inefficiency.',
                     'extended_definition': """Funding for service delivery and projects is fragmented due to different funding sources/channels:
                     - Budget general funds from different ministries/agencies
                     - Earmarked funds from transfers from other governments, institutions, organizations
@@ -165,114 +174,120 @@ BOTTLENECK_DATA = {
                     - Nigeria: Health financing highly fragmented across federal/state levels with multiple pools"""
                 },
                 {
+                    'id': '5.2',
+                    'name': 'Intergovernmental financing systems for delivery are often incoherent, bypassed and uncoordinated between levels of government',
+                    'description': 'Intergovernmental revenue assignments and intergovernmental transfer systems are often ad hoc, have conflicting policy objectives, not based on clear functional assignments and associated expenditure and infrastructure needs, undermining the effective mobilization, deployment and use of public resources across levels of government and sectors.',
+                    'extended_definition': ''
+                },
+                {
+                    'id': '5.3',
+                    'name': 'Shortfalls, delays and diversion of funding for delivery',
+                    'description': 'Weak, ad hoc systems, bureaucratic procedures and political interference cause shortfalls in financial resources, their diversion from their intended purpose and delays in them getting to delivery units when needed.',
+                    'extended_definition': ''
+                },
+            ]
+        },
+        6: {
+            'name': 'Inefficient deployment and management of resources and inputs',
+            'description': (
+                "High overheads, poor investment management, inefficient human resource deployment, limited operational "
+                "funding, procurement delays, and weak multi-level coordination undermine effective resource use."
+            ),
+            'bottlenecks': [
+                {
+                    'id': '6.1',
+                    'name': 'Resource deployment is inefficient due to high overheads and unbalanced allocations to delivery inputs and sectoral programs',
+                    'description': 'There is limited understanding of where major inefficiencies lie in different sectors and/or the causes of those inefficiencies. There may be high administrative overheads. There may be investment in high cost interventions relative to cost effective ones. Wages make up a large and increasing share of sector expenditure, squeezing out non-wage spending critical for regulation and delivery. Large subsides for SOEs absorb increasing shares of spending.',
+                    'extended_definition': ''
+                },
+                {
                     'id': '6.2',
-                    'name': 'Lack of coordination of off-treasury development resources with government systems',
-                    'description': 'Off-treasury resources including donor funding, loans and technical assistance often deployed through parallel, non-government channels with insufficient coordination with the national government. This creates duplication of efforts, inefficiencies in resource use, and can undermine government systems.',
+                    'name': 'Inefficient public investment decisions and management of assets',
+                    'description': 'There may be a lack of complete, consistent, and up to date information on the status of ongoing, proposed, and stalled/delayed public investment projects. New projects may be included in the budget before existing projects are completed as political incentives push towards announcements of new projects. There may be a proliferation of small and non-strategic projects means that the overall capital portfolio is not aligned with national development priorities. Multi-year commitments to capital spending are not factored into the medium-term budget plan, leading to under-budgeting for capital. Public sector assets may not be properly maintained with new investment prioritized over maintaining existing ones.',
+                    'extended_definition': ''
+                },
+                {
+                    'id': '6.3',
+                    'name': 'High cost, inefficient deployment, poor motivation and inadequate skills of frontline and other staff',
+                    'description': 'Human resources may be of relatively high cost, as their may be a public sector wage premium. Human resources may not be deployed according to need and skills, and are often not qualified enough and not provided with adequate incentives (pay, working conditions, support, training, etc.) and motivated to do their job effectively.',
+                    'extended_definition': ''
+                },
+                {
+                    'id': '6.4',
+                    'name': 'Limited availability of operational funding to regulate and run services and maintain infrastructure and other assets',
+                    'description': 'Payment of wages and salaries eats up a large share of public resources, constraining spending on goods & services and other important operational expenses, and on capital expenditure, rendering government interventions less effective.',
+                    'extended_definition': ''
+                },
+                {
+                    'id': '6.5',
+                    'name': 'Delays in and inflated cost of procurement for infrastructure and operational inputs',
+                    'description': 'Procurement systems are weak, generating unnecessary delays and inflated costs in the acquisition of important operational inputs and infrastructure projects. This results in low quality and costly infrastructure, lack of inputs necessary for service delivery, etc.',
+                    'extended_definition': ''
+                },
+                {
+                    'id': '6.6',
+                    'name': 'The arrangements for managing resources at the point of delivery is ineffective, especially in multi-level government contexts',
+                    'description': 'The processes for managing and monitoring resources at central, subnational and frontline providers is often misaligned with multi level governance arrangements and available capacity. There is often a lack of coordination between sub-national and national budgeting processes results in incoherence in the deployment and use of resources as a whole. They may be similarly weak management and poor coordination across different types of organization - public sector, SOEs and the private sector. These challenges may be different for different types of input - human resources, operational inputs and infrastructure.',
                     'extended_definition': ''
                 },
             ]
         },
         7: {
-            'name': 'Procurement inefficiencies',
+            'name': 'Resource management and oversight institutions discourage performance',
             'description': (
-                "Procurement is slow or distorted—multi-layer approvals, re-tendering, and weak/anticompetitive markets "
-                "inflate costs and delay delivery."
+                "Strict controls limit autonomy, weak enforcement undermines compliance, tax administration is weak, "
+                "fiscal governance is inadequate, and transparency/accountability mechanisms are insufficient."
             ),
             'bottlenecks': [
                 {
                     'id': '7.1',
-                    'name': 'Procurement delays and inefficiencies',
-                    'description': 'Excessive and bureaucratic procurement requirements and approval processes can delay implementation of policies. This can also be driven by concerns about inadvertently not complying with the rules, without adequate flexibility to consider the urgency of the need and the nature of the goods and services being procured.',
+                    'name': 'The design of regulatory, incentive, control and management systems limits autonomy and discourages performance',
+                    'description': 'Strict controls may limit flexibility to manage resources in line with needs, leading to ineffective spending and undermining performance. Taxation, tax expenditure, financing, regulation and incentive schemes are not focused on, inadequate and inconsistent with influencing behavior, investment and action.',
                     'extended_definition': ''
                 },
                 {
                     'id': '7.2',
-                    'name': 'Poor market management of strategic commodities',
-                    'description': 'Strategic commodities, such as certain medicines, fertilizers and seeds may be managed in inefficient ways due to the lack of a competitive and adequately structured market, leading to higher prices, lower quality of products, and/or other inefficiencies. This can also include strategic commodities and services being overpriced and inflated due to collusion of suppliers or inadequate procurement capacity within government.',
+                    'name': 'Non-compliance and weak enforcement of regulatory, PFM and public sector management systems undermines performance and accountability',
+                    'description': 'Public sector systems, processes and procedures are not consistently utilized and followed by users or public sector workers due to user unfriendly design, inadequate skills, and weak incentives and enforcement, opening the way for inefficiencies, resource misuse and corrupt behavior.',
+                    'extended_definition': ''
+                },
+                {
+                    'id': '7.3',
+                    'name': 'Weakness in tax compliance administration leads to inefficient or inequitable revenue collection and inefficient revenue management',
+                    'description': 'Weaknesses in tax compliance administration undermine the fairness and efficiency of revenue collection. When tax laws are poorly enforced or compliance systems are weak, taxpayers may avoid or evade taxes, shifting the burden onto more compliant individuals and businesses. This not only reduces overall revenue but also erodes trust in the tax system. Inefficient revenue management undermines the governments ability to effectively forecast tax revenues, adequately account for tax revenues and maintain a VAT refund process.',
+                    'extended_definition': ''
+                },
+                {
+                    'id': '7.4',
+                    'name': 'Weaknesses in fiscal governance undermine public and private investment and action',
+                    'description': 'Weaknesses in macro-fiscal discipline, procurement, financial reporting and/or audit undermines government\'s ability to implement public sector programs and mobilize private finance for public and private investment and action.',
+                    'extended_definition': ''
+                },
+                {
+                    'id': '7.5',
+                    'name': 'Inadequate transparency, oversight, monitoring, evaluation and accountability for resources and performance',
+                    'description': 'Monitoring and evaluation systems are not well developed or functioning effectively. The internal audit, external audit and parliamentary oversight functions do not provide adequate accountability for both resource use and performance. There maybe inadequate transparency and/or involvement of beneficiaries in the monitoring and use of funds and service delivery. Weaknesses in accountability and transparency frameworks undermine public confidence in the integrity of the tax administration, impacting upon tax morale.',
                     'extended_definition': ''
                 },
             ]
         },
         8: {
-            'name': 'Inefficiencies in frontline delivery',
+            'name': 'Inadequate use of sector and financial data in decision making and accountability',
             'description': (
-                "Service delivery suffers from staff shortages/skill-mix gaps, infrastructure deficits, stockouts, weak outreach "
-                "mechanisms, and poor quality standards/supervision."
+                "Available information is not effectively used for decision making, and data systems have gaps, "
+                "poor quality, and are fragmented without interoperability."
             ),
             'bottlenecks': [
                 {
                     'id': '8.1',
-                    'name': 'Inadequate quantity and skill mix of human resources',
-                    'description': 'In many settings, the public sector workforce numbers are inadequate to deliver the scope of expected services. This can be due to insufficient hiring, high turnover, an inability to attract high caliber staff, as well as poor distribution across geographies and administrative units. Additionally, the skill mix within the workforce may not be aligned to service delivery needs.',
+                    'name': 'Available financial and non-financial information not used for decision making, management and accountability',
+                    'description': 'Governments collect lots of information, both financial and non-financial, across many sectors and policy areas. Such information, however, is not effectively used and analyzed to support decision making processes, limiting the evidence on which policy formulation and implementation are based.',
                     'extended_definition': ''
                 },
                 {
                     'id': '8.2',
-                    'name': 'Inadequate infrastructure',
-                    'description': 'Inadequate physical infrastructure at frontline service delivery units, including buildings, equipment, utilities, and digital infrastructure for service provision. Without adequate infrastructure in place, even the most dedicated service delivery workforce would struggle to achieve the desired outcomes.',
-                    'extended_definition': ''
-                },
-                {
-                    'id': '8.3',
-                    'name': 'Supply shortages and stockouts of essential commodities',
-                    'description': 'Essential commodities being unavailable at service delivery units when required. Causes can include inadequate quantification and forecasting, insufficient funding, and other supply chain bottlenecks.',
-                    'extended_definition': ''
-                },
-                {
-                    'id': '8.4',
-                    'name': 'Inadequate delivery mechanisms for reaching beneficiaries',
-                    'description': 'Inadequate channels and approaches to reach and deliver to targeted beneficiaries. This can be driven by several supply side factors, such as insufficient outreach mechanisms in communities, unaffordable service delivery models, limited community health infrastructure. Or, it could be driven by demand side factors such as low demand for services from beneficiaries.',
-                    'extended_definition': ''
-                },
-                {
-                    'id': '8.5',
-                    'name': 'Poor standards and poor quality of services',
-                    'description': 'Frontline staff may deliver sub-standard services due to insufficient skills and competencies, which have a detrimental effect on the achievement of development outcomes. This can be driven by weak accreditation and supervision systems, inadequate and insufficient training programs, and limited accountability for quality.',
-                    'extended_definition': ''
-                },
-            ]
-        },
-        9: {
-            'name': 'Structural or Contextual Barriers',
-            'description': (
-                "Exogenous constraints—geography, socio-cultural norms, poverty, conflict/instability, disasters, migration—"
-                "that limit access or the feasibility of service delivery."
-            ),
-            'bottlenecks': [
-                {
-                    'id': '9.1',
-                    'name': 'Geographic barriers',
-                    'description': 'Natural or physical geography creates difficulties in reaching populations with services. This includes populations living in remote, mountainous, or island regions, where the cost and complexity of service provision is significantly higher.',
-                    'extended_definition': ''
-                },
-                {
-                    'id': '9.2',
-                    'name': 'Socio-cultural barriers',
-                    'description': 'Cultural, social or religious norms and practices that limit access to or utilization of government services by certain population groups. This can include gender-based discrimination, caste systems, or religious beliefs that prevent certain groups from accessing services.',
-                    'extended_definition': ''
-                },
-                {
-                    'id': '9.3',
-                    'name': 'Economic barriers (poverty)',
-                    'description': 'Economic constraints that prevent populations from accessing services, even when they are available. This includes both direct costs (fees, transportation) and indirect costs (lost wages, opportunity costs) that make services unaffordable for poor populations.',
-                    'extended_definition': ''
-                },
-                {
-                    'id': '9.4',
-                    'name': 'Governance challenges (conflict, instability)',
-                    'description': 'Political instability, conflict, or weak governance structures that prevent effective service delivery. This includes areas affected by war, insurgency, or where government authority is contested or absent.',
-                    'extended_definition': ''
-                },
-                {
-                    'id': '9.5',
-                    'name': 'Environmental challenges (natural disasters)',
-                    'description': 'Environmental factors and natural disasters that disrupt service delivery systems. This includes floods, droughts, earthquakes, and other natural disasters that damage infrastructure and displace populations.',
-                    'extended_definition': ''
-                },
-                {
-                    'id': '9.6',
-                    'name': 'Demographic changes (urbanization, migration)',
-                    'description': 'Rapid demographic shifts that strain existing service delivery systems. This includes rapid urbanization, large-scale migration, or refugee influxes that overwhelm existing infrastructure and services.',
+                    'name': 'Data systems have gaps and poor quality information, are fragmented and do not interoperate',
+                    'description': 'Different types of data systems for managing different kinds of government information (central, local, sectoral, financial, performance, etc.) have gaps and poor quality information, are set up and managed in an uncoordinated way, and are not integrated in ways that could support better informed decision making.',
                     'extended_definition': ''
                 },
             ]
