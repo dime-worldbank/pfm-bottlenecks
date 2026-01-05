@@ -1,34 +1,17 @@
-# Databricks notebook source
-# MAGIC %pip install -U "pydantic>=2.4,<3" instructor openai azure-identity sentence-transformers
-
-# COMMAND ----------
-
-# MAGIC %run ./service
-
-# COMMAND ----------
-
-# MAGIC %run ./consts
-
-# COMMAND ----------
-
-# MAGIC %run ./bottleneck_schemas
-
-# COMMAND ----------
-
-# MAGIC %run ./bottleneck_definitions
-
-# COMMAND ----------
-
 """
 Bottleneck Processor - Main processing engine for bottleneck evidence extraction and validation.
 """
 
-from typing import List
 import pandas as pd
 from tqdm import tqdm
 from enum import Enum
 from typing import List
 from pydantic import BaseModel, Field
+from pyspark.sql import SparkSession
+from service import Service
+from bottleneck_definitions import load_bottleneck_definition
+from bottleneck_schemas import get_schema
+from consts import LLM_MODEL, VALIDATION_SYSTEM_PROMPT
 
 def build_validation_model(bottleneck_id: str, subschema: dict, subschema_index: int = 0):
 
@@ -156,29 +139,11 @@ class BottleneckProcessor:
         self.service = service
         self.model = model
         self.schema = get_schema(bottleneck_id)
-        self.definition = self._load_definition()
+        self.definition = load_bottleneck_definition(bottleneck_id)
         self.validation_models = [
-            build_validation_model(bottleneck_id, subschema, i) 
+            build_validation_model(bottleneck_id, subschema, i)
             for i, subschema in enumerate(self.schema)
         ]
-
-    def _load_definition(self) -> dict:
-        """Load bottleneck definition from centralized source."""
-        data = load_bottlenecks()
-        challenge_id = int(self.bottleneck_id.split(".")[0])
-        challenge = data["challenges"][challenge_id]
-
-        for bn in challenge["bottlenecks"]:
-            if bn["id"] == self.bottleneck_id:
-                return {
-                    "id": bn["id"],
-                    "name": bn["name"],
-                    "description": bn["description"],
-                    "extended_definition": bn.get("extended_definition", ""),
-                    "challenge_name": challenge["name"],
-                    "challenge_description": challenge["description"],
-                }
-        raise ValueError(f"Bottleneck {self.bottleneck_id} not found in definitions")
 
     def validate_extraction(
         self, extracted_text: str, node_id: int, chunk_id: int
@@ -302,7 +267,7 @@ class BottleneckProcessor:
         """Format list for prompt."""
         return "\n".join(f"  - {item}" for item in items)
 
-def run_validation(schema: str, bottleneck_id: str, overwrite: bool = False):
+def run_validation(spark: SparkSession, schema: str, bottleneck_id: str, overwrite: bool = False):
     """Validate extracted evidence against schema. Overwrites results each run."""
 
     extractions_table = f"rpf_bottleneck_{bottleneck_id.replace('.', '_')}_extractions"

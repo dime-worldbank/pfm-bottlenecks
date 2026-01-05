@@ -1,4 +1,3 @@
-# Databricks notebook source
 """
 Post Validation / Reflection - Extract additional info and generate stylized summaries
 from accepted evidence.
@@ -16,6 +15,10 @@ from typing import Optional, List, Literal
 import pandas as pd
 from pydantic import BaseModel, Field
 from tqdm import tqdm
+from pyspark.sql import SparkSession
+from service import Service
+from bottleneck_definitions import load_bottleneck_definition
+from consts import LLM_MODEL
 
 
 class ExtractedInfo(BaseModel):
@@ -66,25 +69,8 @@ class PostValidationProcessor:
         self.bottleneck_id = bottleneck_id
         self.service = service
         self.model = model
-        self.definition = self._load_definition()
+        self.definition = load_bottleneck_definition(bottleneck_id)
         self.examples = self._get_example_summaries()
-
-    def _load_definition(self) -> dict:
-        data = load_bottlenecks()
-        challenge_id = int(self.bottleneck_id.split(".")[0])
-        challenge = data["challenges"][challenge_id]
-
-        for bn in challenge["bottlenecks"]:
-            if bn["id"] == self.bottleneck_id:
-                return {
-                    "id": bn["id"],
-                    "name": bn["name"],
-                    "description": bn["description"],
-                    "extended_definition": bn.get("extended_definition", ""),
-                    "challenge_name": challenge["name"],
-                    "challenge_description": challenge["description"],
-                }
-        raise ValueError(f"Bottleneck {self.bottleneck_id} not found in definitions")
 
     def _get_example_summaries(self) -> List[str]:
         """Return example summaries to guide tone and format."""
@@ -220,6 +206,7 @@ class PostValidationProcessor:
 
 
 def run_summary_generation(
+    spark: SparkSession,
     schema: str,
     bottleneck_id: str,
     doc_metadata_table: str,
