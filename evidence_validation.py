@@ -267,7 +267,7 @@ class BottleneckProcessor:
         """Format list for prompt."""
         return "\n".join(f"  - {item}" for item in items)
 
-def run_validation(spark: SparkSession, schema: str, bottleneck_id: str, overwrite: bool = False):
+def run_validation(spark: SparkSession, service: Service, schema: str, bottleneck_id: str, overwrite: bool = False):
     """Validate extracted evidence against schema. Overwrites results each run."""
 
     extractions_table = f"rpf_bottleneck_{bottleneck_id.replace('.', '_')}_extractions"
@@ -287,7 +287,6 @@ def run_validation(spark: SparkSession, schema: str, bottleneck_id: str, overwri
         print("No extractions to validate")
         return
 
-    service = Service(dbutils)
     processor = BottleneckProcessor(bottleneck_id, service)
     is_multi_subschema = len(processor.schema) > 1
 

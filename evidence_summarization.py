@@ -207,6 +207,7 @@ class PostValidationProcessor:
 
 def run_summary_generation(
     spark: SparkSession,
+    service: Service,
     schema: str,
     bottleneck_id: str,
     doc_metadata_table: str,
@@ -306,7 +307,6 @@ def run_summary_generation(
         validate="many_to_one",
     )
 
-    service = Service(dbutils)
     processor = PostValidationProcessor(bottleneck_id, service)
 
     results = []

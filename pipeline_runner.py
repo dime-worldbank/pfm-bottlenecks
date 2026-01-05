@@ -13,7 +13,12 @@ from evidence_extraction import run_extraction
 from evidence_validation import run_validation
 from evidence_reflection import run_reflection
 from evidence_summarization import run_summary_generation
+from service import Service
 from consts import *
+
+# COMMAND ----------
+
+service = Service(dbutils)
 
 # COMMAND ----------
 
@@ -37,12 +42,13 @@ run_prefilter(
 # COMMAND ----------
 
 # TODO: put processed bottlenecks in a list & loop over
-BOTTLENECK_ID = '1.1'
+BOTTLENECK_ID = '5.1'
 
 # COMMAND ----------
 
 run_extraction(
     spark,
+    service,
     schema=SCHEMA,
     source_table=CHUNKS_TABLE,
     prefilter_results_table=PREFILTER_RESULTS_TABLE,
@@ -53,6 +59,7 @@ run_extraction(
 
 run_validation(
     spark,
+    service,
     schema=SCHEMA,
     bottleneck_id=BOTTLENECK_ID,
 )
@@ -61,6 +68,7 @@ run_validation(
 
 run_reflection(
     spark,
+    service,
     schema=SCHEMA,
     bottleneck_id=BOTTLENECK_ID,
 )
@@ -69,10 +77,11 @@ run_reflection(
 
 run_summary_generation(
     spark,
+    service,
     schema=SCHEMA,
     bottleneck_id=BOTTLENECK_ID,
     source_stage="reflection", # change to "reflection" or "validation" depending on the source data
     doc_metadata_table=DOCS_METADATA_TABLE,
-    chunks_table=CHUNKS_TABLE, 
+    chunks_table=CHUNKS_TABLE,
 )
 

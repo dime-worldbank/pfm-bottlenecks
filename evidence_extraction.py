@@ -87,7 +87,7 @@ class EvidenceExtractor:
         Do not infer or paraphrase - extract exact quotes only.
         """
 
-def run_extraction(spark: SparkSession, schema: str, source_table: str, prefilter_results_table: str, bottleneck_id: str):
+def run_extraction(spark: SparkSession, service: Service, schema: str, source_table: str, prefilter_results_table: str, bottleneck_id: str):
     """Extract evidence from prefiltered chunks and save to table."""
 
     extractions_table = f"rpf_bottleneck_{bottleneck_id.replace('.', '_')}_extractions"
@@ -112,7 +112,6 @@ def run_extraction(spark: SparkSession, schema: str, source_table: str, prefilte
         print("No chunks to extract")
         return
 
-    service = Service(dbutils)
     extractor = EvidenceExtractor(bottleneck_id, service)
 
     results = []
