@@ -1,9 +1,8 @@
-# Databricks notebook source
 import requests
 from tqdm import tqdm
 import pandas as pd
-
-# COMMAND ----------
+from pyspark.sql import SparkSession
+from .consts import CNTRY_NAMES
 
 # helper function for chunking
 splitting_expr = '\r\n\r\n'
@@ -16,9 +15,7 @@ def chunk_text_by_chars(text, max_chars=5000):
     return chunks
 
 
-# COMMAND ----------
-
-def run_document_ingestion(schema: str, docs_table: str, chunks_table: str):
+def run_document_ingestion(spark: SparkSession, schema: str, docs_table: str, chunks_table: str):
     """Download PER/PFR documents, chunk them, and save to Databricks tables."""
 
     full_docs_table = f"{schema}.{docs_table}"
@@ -35,7 +32,7 @@ def run_document_ingestion(schema: str, docs_table: str, chunks_table: str):
         return
 
     # Query for PER/PFR documents
-    query = """
+    query = f"""
     SELECT *
     FROM prd_corpdata.dm_reference_gold.v_dim_imagebank_document
     WHERE (
@@ -50,11 +47,7 @@ def run_document_ingestion(schema: str, docs_table: str, chunks_table: str):
         doc_name not ILIKE '%Chapter%' AND
         doc_name not ILIKE '%Module%' AND
         lang_name = 'English' AND
-        cntry_name in ('Burkina Faso', 'Cambodia', 'Bangladesh', 'Uganda', 'Kenya',
-           'Colombia', 'Paraguay', 'Malawi', 'Congo, Democratic Republic of',
-           'Nigeria', 'Ghana|N/A', 'Ghana', 'Mozambique', 'Liberia',
-           'Uruguay', 'Pakistan', 'Bhutan', 'Chile', 'Tunisia',
-           'Africa|Kenya')
+        cntry_name in ({', '.join(CNTRY_NAMES)})
     )
     AND doc_date != 'Disclosed'
     AND disclsr_stat_name = 'Disclosed'

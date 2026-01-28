@@ -1,18 +1,18 @@
-# Databricks notebook source
 LLM_MODEL = 'gpt-4o'
-
-# COMMAND ----------
 
 LOCAL_EMBEDDINGS_MODEL = "/Volumes/prd_mega/sboost4/vboost4/Documents/input/Bottleneck/all-mpnet-base-v2"
 
-# COMMAND ----------
+CNTRY_NAMES = [
+    'Bangladesh', 'Bhutan', 'Burkina Faso', 'Cambodia', 'Chile', 'Colombia', 'Congo, Democratic Republic of',
+    'Ghana|N/A', 'Ghana', 'Kenya', 'Africa|Kenya', 'Liberia', 'Malawi', 'Mozambique', 'Nigeria', 'Pakistan',
+    'Paraguay', 'Tunisia', 'Uganda', 'Uruguay'
+    ]
 
 SCHEMA = "prd_mega.sboost4"
 CHUNKS_TABLE = "per_pfr_chunks"
 DOCS_METADATA_TABLE = "per_pfr_document_data"
 PREFILTER_RESULTS_TABLE = "per_pfr_prefilter_results"
 
-# COMMAND ----------
 
 VALIDATION_SYSTEM_PROMPT = """You are a public financial management (PFM) diagnostic analyst.
 
@@ -27,6 +27,7 @@ Guidelines:
 6. Abstain if uncertain - be conservative
 
 Be precise, conservative, and evidence-based."""
+
 
 EXTRACTION_SYSTEM_PROMPT = """You are a public finance expert extracting evidence from fiscal diagnostic reports.
 

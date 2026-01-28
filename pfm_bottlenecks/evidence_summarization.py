@@ -1,4 +1,3 @@
-# Databricks notebook source
 """
 Post Validation / Reflection - Extract additional info and generate stylized summaries
 from accepted evidence.
@@ -16,6 +15,10 @@ from typing import Optional, List, Literal
 import pandas as pd
 from pydantic import BaseModel, Field
 from tqdm import tqdm
+from pyspark.sql import SparkSession
+from pfm_bottlenecks.service import Service
+from pfm_bottlenecks.bottleneck_definitions import load_bottleneck_definition
+from pfm_bottlenecks.consts import LLM_MODEL
 
 
 class ExtractedInfo(BaseModel):
@@ -66,25 +69,8 @@ class PostValidationProcessor:
         self.bottleneck_id = bottleneck_id
         self.service = service
         self.model = model
-        self.definition = self._load_definition()
+        self.definition = load_bottleneck_definition(bottleneck_id)
         self.examples = self._get_example_summaries()
-
-    def _load_definition(self) -> dict:
-        data = load_bottlenecks()
-        challenge_id = int(self.bottleneck_id.split(".")[0])
-        challenge = data["challenges"][challenge_id]
-
-        for bn in challenge["bottlenecks"]:
-            if bn["id"] == self.bottleneck_id:
-                return {
-                    "id": bn["id"],
-                    "name": bn["name"],
-                    "description": bn["description"],
-                    "extended_definition": bn.get("extended_definition", ""),
-                    "challenge_name": challenge["name"],
-                    "challenge_description": challenge["description"],
-                }
-        raise ValueError(f"Bottleneck {self.bottleneck_id} not found in definitions")
 
     def _get_example_summaries(self) -> List[str]:
         """Return example summaries to guide tone and format."""
@@ -218,31 +204,22 @@ class PostValidationProcessor:
                 {extracted_info.model_dump_json(indent=2)}
                 """
 
-
 def run_summary_generation(
+    spark: SparkSession,
+    service: Service,
     schema: str,
     bottleneck_id: str,
     doc_metadata_table: str,
     chunks_table: str,
-    source_stage: Literal["validation", "reflection"] = "validation",
     overwrite: bool = False
 ):
     """
     Generate summaries for accepted evidence and save to table.
-
-    source_stage:
-        - "validation" → use ..._validated_results with is_bottleneck_evidence == True
-        - "reflection" → use ..._reflection_results with keep_as_evidence == True
     """
 
     extractions_table = f"rpf_bottleneck_{bottleneck_id.replace('.', '_')}_extractions"
-
-    if source_stage == "validation":
-        decisions_table = f"rpf_bottleneck_{bottleneck_id.replace('.', '_')}_validated_results"
-        output_table = f"bottleneck_{bottleneck_id.replace('.', '_')}_summaries_validation"
-    else:
-        decisions_table = f"rpf_bottleneck_{bottleneck_id.replace('.', '_')}_reflection_results"
-        output_table = f"bottleneck_{bottleneck_id.replace('.', '_')}_summaries_reflection"
+    decisions_table = f"rpf_bottleneck_{bottleneck_id.replace('.', '_')}_reflection_results"
+    output_table = f"bottleneck_{bottleneck_id.replace('.', '_')}_summaries_reflection"
 
     summary_output_table_exists = spark.catalog.tableExists(f"{schema}.{output_table}")
 
@@ -257,10 +234,7 @@ def run_summary_generation(
         print(f"No decision rows found in {schema}.{decisions_table}")
         return
 
-    if source_stage == "validation":
-        positive = decisions_df[decisions_df["is_bottleneck_evidence"] == True].copy()
-    else:
-        positive = decisions_df[decisions_df["keep_as_evidence"] == True].copy()
+    positive = decisions_df[decisions_df["keep_as_evidence"] == True].copy()
 
     print(f"Loaded {len(positive)} accepted evidence items from {decisions_table}")
 
@@ -319,7 +293,6 @@ def run_summary_generation(
         validate="many_to_one",
     )
 
-    service = Service(dbutils)
     processor = PostValidationProcessor(bottleneck_id, service)
 
     results = []
@@ -352,7 +325,6 @@ def run_summary_generation(
                 "node_id": node_id,
                 "chunk_id": chunk_id,
                 "bottleneck_id": bottleneck_id,
-                "source_stage": source_stage,
                 "extracted_evidence": extracted_evidence,
                 "extended_context": extended_context,
                 "final_summary": summary,
@@ -367,7 +339,6 @@ def run_summary_generation(
                     "node_id": node_id,
                     "chunk_id": chunk_id,
                     "bottleneck_id": bottleneck_id,
-                    "source_stage": source_stage,
                     "extracted_evidence": extracted_evidence,
                     "extended_context": extended_context,
                     "final_summary": f"Error: {str(e)}",
@@ -390,4 +361,3 @@ def run_summary_generation(
     spark_results.write.mode("overwrite").saveAsTable(f"{schema}.{output_table}")
 
     print(f"Saved to {schema}.{output_table}")
-

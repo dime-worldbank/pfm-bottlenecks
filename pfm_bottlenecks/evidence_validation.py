@@ -1,55 +1,39 @@
-# Databricks notebook source
-# MAGIC %pip install -U "pydantic>=2.4,<3" instructor openai azure-identity sentence-transformers
-
-# COMMAND ----------
-
-# MAGIC %run ./service
-
-# COMMAND ----------
-
-# MAGIC %run ./consts
-
-# COMMAND ----------
-
-# MAGIC %run ./bottleneck_schemas
-
-# COMMAND ----------
-
-# MAGIC %run ./bottleneck_definitions
-
-# COMMAND ----------
-
 """
 Bottleneck Processor - Main processing engine for bottleneck evidence extraction and validation.
 """
 
-from typing import List
 import pandas as pd
 from tqdm import tqdm
 from enum import Enum
 from typing import List
 from pydantic import BaseModel, Field
+from pyspark.sql import SparkSession
+from pfm_bottlenecks.service import Service
+from pfm_bottlenecks.bottleneck_definitions import load_bottleneck_definition, get_schema
+from pfm_bottlenecks.consts import LLM_MODEL, VALIDATION_SYSTEM_PROMPT
 
-def build_validation_model(bottleneck_id: str, schema: dict):
+def build_validation_model(bottleneck_id: str, subschema: dict, subschema_index: int = 0):
+
+    safe_name = f"{bottleneck_id}_{subschema_index}".replace('.', '_')
 
     # Dynamic enums from schema lists
     StrongCueEnum = Enum(
-        f"StrongCue_{bottleneck_id.replace('.', '_')}",
-        {name: name for name in schema["strong_cues"]}
+        f"StrongCue_{safe_name}",
+        {name: name for name in subschema["strong_cues"]}
     )
 
     ModerateCueEnum = Enum(
-        f"ModerateCue_{bottleneck_id.replace('.', '_')}",
-        {name: name for name in schema["moderate_cues"]}
+        f"ModerateCue_{safe_name}",
+        {name: name for name in subschema["moderate_cues"]}
     )
 
     FailureTypeEnum = Enum(
-        f"FailureType_{bottleneck_id.replace('.', '_')}",
-        {name: name for name in schema.get("failure_types", [])} or {"none": "none"}
+        f"FailureType_{safe_name}",
+        {name: name for name in subschema.get("failure_types", [])} or {"none": "none"}
     )
 
     DecisionEnum = Enum(
-        f"Decision_{bottleneck_id.replace('.', '_')}",
+        f"Decision_{safe_name}",
         {
             "relevant_feature": "relevant_feature",
             "relevant_feature_and_failure": "relevant_feature_and_failure",
@@ -59,8 +43,8 @@ def build_validation_model(bottleneck_id: str, schema: dict):
     )
 
     SubtypeEnum = Enum(
-        f"Subtype_{bottleneck_id.replace('.', '_')}",
-        {"other": "other", **{s: s for s in schema.get("subtypes", [])}},
+        f"Subtype_{safe_name}",
+        {"other": "other", **{s: s for s in subschema.get("subtypes", [])}},
     )
 
     class BottleneckValidation(BaseModel):
@@ -74,7 +58,7 @@ def build_validation_model(bottleneck_id: str, schema: dict):
             ...,
             description=(
                 f"Feature-based verdict for bottleneck {bottleneck_id}. "
-                f"Should usually follow acceptance_rule: {schema.get('acceptance_rule', '')}"
+                f"Should usually follow acceptance_rule: {subschema.get('acceptance_rule', '')}"
             ),
         )
         is_bottleneck_plus_failure: bool = Field(
@@ -150,57 +134,33 @@ class BottleneckProcessor:
     """
 
     def __init__(self, bottleneck_id: str, service: Service, model: str = LLM_MODEL):
-        """
-        Initialize processor for a specific bottleneck.
-
-        Args:
-            bottleneck_id: Bottleneck ID (e.g., "2.1", "6.1")
-            service: Service instance for LLM calls
-            model: Model name for OpenAI (default: LLM_MODEL)
-        """
         self.bottleneck_id = bottleneck_id
         self.service = service
         self.model = model
         self.schema = get_schema(bottleneck_id)
-        self.definition = self._load_definition()
-        self.validation_model = build_validation_model(bottleneck_id, self.schema)
-
-    def _load_definition(self) -> dict:
-        """Load bottleneck definition from centralized source."""
-        data = load_bottlenecks()
-        challenge_id = int(self.bottleneck_id.split(".")[0])
-        challenge = data["challenges"][challenge_id]
-
-        for bn in challenge["bottlenecks"]:
-            if bn["id"] == self.bottleneck_id:
-                return {
-                    "id": bn["id"],
-                    "name": bn["name"],
-                    "description": bn["description"],
-                    "extended_definition": bn.get("extended_definition", ""),
-                    "challenge_name": challenge["name"],
-                    "challenge_description": challenge["description"],
-                }
-        raise ValueError(f"Bottleneck {self.bottleneck_id} not found in definitions")
-
+        self.definition = load_bottleneck_definition(bottleneck_id)
+        self.validation_models = [
+            build_validation_model(bottleneck_id, subschema, i)
+            for i, subschema in enumerate(self.schema)
+        ]
 
     def validate_extraction(
         self, extracted_text: str, node_id: int, chunk_id: int
     ) -> dict:
-        """
-        Validate extracted evidence against schema cues and hard negatives.
+        if len(self.schema) == 1:
+            return self._validate_single(extracted_text, node_id, chunk_id)
+        else:
+            return self._validate_multi(extracted_text, node_id, chunk_id)
 
-        Returns:
-            A dict containing:
-            - all fields from the per-bottleneck BottleneckValidation model
-            - node_id, chunk_id, bottleneck_id metadata
-        """
-        prompt = self._build_validation_prompt(extracted_text)
+    def _validate_single(
+        self, extracted_text: str, node_id: int, chunk_id: int
+    ) -> dict:
+        prompt = self._build_validation_prompt(extracted_text, self.schema[0])
 
         validation = self.service.execute(
             prompt=prompt,
             model=self.model,
-            response_model=self.validation_model,
+            response_model=self.validation_models[0],
             system_message=VALIDATION_SYSTEM_PROMPT,
         )
 
@@ -211,16 +171,47 @@ class BottleneckProcessor:
 
         return data
 
+    def _validate_multi(
+        self, extracted_text: str, node_id: int, chunk_id: int
+    ) -> dict:
+        matched_subschemas = []
+        subschema_results = []
+        # TODO: Avoid using the loop here (high token usage). Find a better way for finding the appropriate subschema (could use semantic similarity with threshold)
+        for i, subschema in enumerate(self.schema):
+            prompt = self._build_validation_prompt(extracted_text, subschema)
 
-    def _build_validation_prompt(self, extracted_text: str) -> str:
+            validation = self.service.execute(
+                prompt=prompt,
+                model=self.model,
+                response_model=self.validation_models[i],
+                system_message=VALIDATION_SYSTEM_PROMPT,
+            )
+
+            data = validation.model_dump(mode="json")
+            subschema_name = subschema.get("subschema", f"subschema_{i}")
+            data["subschema"] = subschema_name
+
+            if data["is_bottleneck_evidence"]:
+                matched_subschemas.append(subschema_name)
+
+            subschema_results.append(data)
+
+        return {
+            "node_id": node_id,
+            "chunk_id": chunk_id,
+            "bottleneck_id": self.bottleneck_id,
+            "matched_subschemas": matched_subschemas,
+            "decision": len(matched_subschemas) > 0,
+            "subschema_results": subschema_results,
+        }
+
+    def _build_validation_prompt(self, extracted_text: str, subschema: dict) -> str:
         """Build prompt for validating extracted evidence."""
-        schema = self.schema
         definition = self.definition
 
-        # Build custom sections from schema (e.g., your big 6.1 block)
         custom_sections = ""
-        if schema.get("prompt_sections"):
-            for section_name, section_text in schema["prompt_sections"].items():
+        if subschema.get("prompt_sections"):
+            for section_name, section_text in subschema["prompt_sections"].items():
                 custom_sections += (
                     f"\n{section_name.upper().replace('_', ' ')}:\n{section_text}\n"
                 )
@@ -239,18 +230,18 @@ class BottleneckProcessor:
             VALIDATION CRITERIA:
 
             Strong Cues (any ONE is sufficient):
-            {self._format_list(schema["strong_cues"])}
+            {self._format_list(subschema["strong_cues"])}
 
             Moderate Cues (need TWO or more):
-            {self._format_list(schema["moderate_cues"])}
+            {self._format_list(subschema["moderate_cues"])}
 
             Hard Negatives (REJECT if these apply):
-            {self._format_list(schema["hard_negatives"])}
+            {self._format_list(subschema["hard_negatives"])}
 
             SCOPE LOCK:
-            {schema.get("scope_lock", "")}
+            {subschema.get("scope_lock", "")}
 
-            ACCEPTANCE RULE: {schema["acceptance_rule"]}
+            ACCEPTANCE RULE: {subschema["acceptance_rule"]}
             {custom_sections}
             EXTRACTED EVIDENCE TO VALIDATE:
             {extracted_text}
@@ -275,8 +266,7 @@ class BottleneckProcessor:
         """Format list for prompt."""
         return "\n".join(f"  - {item}" for item in items)
 
-
-def run_validation(schema: str, bottleneck_id: str, overwrite: bool = False):
+def run_validation(spark: SparkSession, service: Service, schema: str, bottleneck_id: str, overwrite: bool = False):
     """Validate extracted evidence against schema. Overwrites results each run."""
 
     extractions_table = f"rpf_bottleneck_{bottleneck_id.replace('.', '_')}_extractions"
@@ -296,8 +286,8 @@ def run_validation(schema: str, bottleneck_id: str, overwrite: bool = False):
         print("No extractions to validate")
         return
 
-    service = Service(dbutils)
     processor = BottleneckProcessor(bottleneck_id, service)
+    is_multi_subschema = len(processor.schema) > 1
 
     results = []
     total = len(has_evidence)
@@ -311,18 +301,28 @@ def run_validation(schema: str, bottleneck_id: str, overwrite: bool = False):
 
         try:
             row_dict = processor.validate_extraction(extracted_text, node_id, chunk_id)
+            if is_multi_subschema:
+                row_dict["is_bottleneck_evidence"] = row_dict["decision"]
             results.append(row_dict)
         except Exception as e:
             print(f"  Error validating chunk {chunk_id}: {str(e)}")
-            results.append(
-                {
-                    "node_id": node_id,
-                    "chunk_id": chunk_id,
-                    "bottleneck_id": bottleneck_id,
-                    "is_bottleneck_evidence": False,
+            error_result = {
+                "node_id": node_id,
+                "chunk_id": chunk_id,
+                "bottleneck_id": bottleneck_id,
+                "is_bottleneck_evidence": False,
+                "rationale": f"Validation error: {str(e)}",
+            }
+            if is_multi_subschema:
+                error_result.update({
+                    "matched_subschemas": [],
+                    "decision": False,
+                    "subschema_results": [],
+                })
+            else:
+                error_result.update({
                     "is_bottleneck_plus_failure": False,
-                    "decision": "irrelevant",  # or "error" if you prefer
-                    "rationale": f"Validation error: {str(e)}",
+                    "decision": "irrelevant",
                     "strong_cues": [],
                     "moderate_cues": [],
                     "hard_negative": False,
@@ -331,8 +331,8 @@ def run_validation(schema: str, bottleneck_id: str, overwrite: bool = False):
                     "failure_present": False,
                     "failure_types": [],
                     "failure_spans": [],
-                }
-            )
+                })
+            results.append(error_result)
 
     print(f"Completed validation: {total} extractions")
 
@@ -342,4 +342,3 @@ def run_validation(schema: str, bottleneck_id: str, overwrite: bool = False):
 
     evidence_count = results_df["is_bottleneck_evidence"].sum()
     print(f"Results: {evidence_count}/{len(results_df)} validated as evidence")
-

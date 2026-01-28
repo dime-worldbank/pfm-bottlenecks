@@ -1,24 +1,3 @@
-# Databricks notebook source
-# MAGIC %pip install -U "pydantic>=2.4,<3" instructor openai azure-identity sentence-transformers
-
-# COMMAND ----------
-
-# MAGIC %run ./service
-
-# COMMAND ----------
-
-# MAGIC %run ./consts
-
-# COMMAND ----------
-
-# MAGIC %run ./bottleneck_schemas
-
-# COMMAND ----------
-
-# MAGIC %run ./bottleneck_definitions
-
-# COMMAND ----------
-
 """
 Bottleneck Reflection - Minimal quality-control pass.
 
@@ -36,6 +15,10 @@ from typing import Optional, Literal
 import pandas as pd
 from tqdm import tqdm
 from pydantic import BaseModel, Field
+from pyspark.sql import SparkSession
+from pfm_bottlenecks.service import Service
+from pfm_bottlenecks.bottleneck_definitions import load_bottleneck_definition
+from pfm_bottlenecks.consts import LLM_MODEL
 
 REFLECTION_SYSTEM_PROMPT = """
 You are a cautious PFM diagnostic reviewer.
@@ -142,7 +125,7 @@ def build_reflection_prompt(bottleneck_def: dict, extracted_span: str) -> str:
         Do NOT invent other labels or keys.
         """
 
-def run_reflection(schema: str, bottleneck_id: str, overwrite: bool = False):
+def run_reflection(spark: SparkSession, service: Service, schema: str, bottleneck_id: str, overwrite: bool = False):
     """
     Run reflection on validated evidence for a given bottleneck.
 
@@ -165,18 +148,7 @@ def run_reflection(schema: str, bottleneck_id: str, overwrite: bool = False):
         print(f"Skipping reflection; table exists: {schema}.{reflection_table}")
         return
 
-    data = load_bottlenecks()
-    challenge_id = int(bottleneck_id.split(".")[0])
-    challenge = data["challenges"][challenge_id]
-
-    bottleneck_def = None
-    for bn in challenge["bottlenecks"]:
-        if bn["id"] == bottleneck_id:
-            bottleneck_def = bn
-            break
-
-    if bottleneck_def is None:
-        raise ValueError(f"Bottleneck {bottleneck_id} not found in definitions")
+    bottleneck_def = load_bottleneck_definition(bottleneck_id)
 
     validated_df = spark.table(f"{schema}.{validated_table}").toPandas()
     if validated_df.empty:
@@ -203,7 +175,6 @@ def run_reflection(schema: str, bottleneck_id: str, overwrite: bool = False):
 
     print(f"Reflecting on {len(merged)} items for bottleneck {bottleneck_id}...")
 
-    service = Service(dbutils)
     results = []
 
     for idx, row in tqdm(merged.iterrows(), total=merged.shape[0]):

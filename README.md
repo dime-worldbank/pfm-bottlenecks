@@ -52,68 +52,29 @@ flowchart LR
 
 ## Pipeline Runner
 
-The main entry point is the pipeline_runner notebook.
+The main entry point is the `pipeline_runner` notebook.
 
-```python
-SCHEMA = "prd_mega.sboost4"
-BOTTLENECK_ID = "6.1"
-
-run_ingestion_step(spark, SCHEMA, DOCS_TABLE, CHUNKS_TABLE)
-
-run_prefilter_step(spark, SCHEMA, CHUNKS_TABLE, PREFILTER_RESULTS_TABLE)
-
-run_extraction_step(
-    schema=SCHEMA,
-    chunks_table=CHUNKS_TABLE,
-    prefilter_results_table=PREFILTER_RESULTS_TABLE,
-    bottleneck_id=BOTTLENECK_ID
-)
-
-run_validation(
-    schema=SCHEMA,
-    bottleneck_id=BOTTLENECK_ID,
-    overwrite=False
-)
-
-run_reflection(
-    schema=SCHEMA,
-    bottleneck_id=BOTTLENECK_ID,
-    source_table=CHUNKS_TABLE,
-    overwrite=False
-)
-
-run_summary_generation(
-    schema=SCHEMA,
-    bottleneck_id=BOTTLENECK_ID,
-    source_stage="reflection",     # or "validation"
-    doc_metadata_table=DOCS_METADATA_TABLE,
-    chunks_table=CHUNKS_TABLE,
-    overwrite=False
-)
-```
 
 ## File Structure
 
 | File | Purpose |
 |------|---------|
 | `pipeline_runner` | Main orchestration |
-| `document_ingestion` | Data curation |
+| `document_ingestion` | Input document curation |
 | `prefilter` | Embedding-based filtering (sentence-transformers) |
 | `evidence_extraction` | Extract evidence spans from chunks (per bottleneck)|\
 | `evidence_validation` | Validate extractions against schema cues and decide if ecidence span is valid evidence |
 | `evidence_reflection` | Additional step to filter out false positives through a reflection step |
 | `evidence_summarization` | Generate additional useful information and stand-alone summaries from validated evidence |
-| `bottleneck_schemas` | Cues, hard negatives, acceptance rules per bottleneck |
-| `bottleneck_definitions` | 31 Sub-Bottleneck definitions across 8 Bottlenecks |
+| `bottleneck_definitions` | 31 Sub-Bottleneck definitions and validation schemas across 8 Challenges |
 | `service` | Azure OpenAI + instructor wrapper |
-| `imports` | Consolidated way to import all required modules using `%run`|
 | `consts` | Consolidated place for variables, parameters and system prompts|
 
 ## Key Concepts
 
 ### Validation Schema
 
-Each bottleneck has a schema in `bottleneck_schemas`:
+Each bottleneck can have a validation schema defined in `bottleneck_definitions` (currently 3 out of 31 have schemas):
 
 - **Strong cues**: Any ONE is sufficient for acceptance
 - **Moderate cues**: Need TWO or more
@@ -140,8 +101,42 @@ Per bottleneck (e.g., 6.1):
 
 ## Adding New Bottlenecks
 
-1. Update schema in `bottleneck_schemas` with cues and hard negatives
+1. Update schema in `bottleneck_definitions` with cues and hard negatives for the bottleneck
 2. Run extraction step (once)
 3. Run validation step (iterate until required precision is acheived)
 4. Run reflection step (once to potentially remove more flase positives)
 5. Run summarization step for summaries and additional information
+
+## Local Development Setup
+
+This project uses [uv](https://github.com/astral-sh/uv) for dependency management. Ensure it is installed in order to run unit tests locally.
+
+### Set up the environment
+
+```bash
+# Create a virtual environment and install dependencies
+uv venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install test dependencies
+uv pip install -e ".[test]"
+
+# Or install all dev dependencies (includes linting tools)
+uv pip install -e ".[dev]"
+```
+
+## Running Tests
+
+Unit tests are located in the `tests/` directory.
+
+### Run all tests with pytest
+
+```bash
+pytest tests/ -v
+```
+
+### Run specific test file
+
+```bash
+pytest tests/test_bottleneck_definitions.py -v
+```
