@@ -2,6 +2,7 @@ import requests
 from tqdm import tqdm
 import pandas as pd
 from pyspark.sql import SparkSession
+from .consts import CNTRY_NAMES
 
 # helper function for chunking
 splitting_expr = '\r\n\r\n'
@@ -31,7 +32,7 @@ def run_document_ingestion(spark: SparkSession, schema: str, docs_table: str, ch
         return
 
     # Query for PER/PFR documents
-    query = """
+    query = f"""
     SELECT *
     FROM prd_corpdata.dm_reference_gold.v_dim_imagebank_document
     WHERE (
@@ -46,17 +47,12 @@ def run_document_ingestion(spark: SparkSession, schema: str, docs_table: str, ch
         doc_name not ILIKE '%Chapter%' AND
         doc_name not ILIKE '%Module%' AND
         lang_name = 'English' AND
-        cntry_name in ('Burkina Faso', 'Cambodia', 'Bangladesh', 'Uganda', 'Kenya',
-           'Colombia', 'Paraguay', 'Malawi', 'Congo, Democratic Republic of',
-           'Nigeria', 'Ghana|N/A', 'Ghana', 'Mozambique', 'Liberia',
-           'Uruguay', 'Pakistan', 'Bhutan', 'Chile', 'Tunisia',
-           'Africa|Kenya')
+        cntry_name in ({', '.join(CNTRY_NAMES)})
     )
     AND doc_date != 'Disclosed'
     AND disclsr_stat_name = 'Disclosed'
     ORDER BY doc_date DESC
     """
-    # TODO: parameterize cntry_name
 
     filtered_df = spark.sql(query).toPandas()
     print(f"Found {len(filtered_df)} PER/PFR documents")

@@ -2,6 +2,12 @@ LLM_MODEL = 'gpt-4o'
 
 LOCAL_EMBEDDINGS_MODEL = "/Volumes/prd_mega/sboost4/vboost4/Documents/input/Bottleneck/all-mpnet-base-v2"
 
+CNTRY_NAMES = [
+    'Bangladesh', 'Bhutan', 'Burkina Faso', 'Cambodia', 'Chile', 'Colombia', 'Congo, Democratic Republic of',
+    'Ghana|N/A', 'Ghana', 'Kenya', 'Africa|Kenya', 'Liberia', 'Malawi', 'Mozambique', 'Nigeria', 'Pakistan',
+    'Paraguay', 'Tunisia', 'Uganda', 'Uruguay'
+    ]
+
 SCHEMA = "prd_mega.sboost4"
 CHUNKS_TABLE = "per_pfr_chunks"
 DOCS_METADATA_TABLE = "per_pfr_document_data"
